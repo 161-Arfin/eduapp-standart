@@ -71,14 +71,14 @@ export default async function handler(
       // console.log("Response:", response);
 
       if (data?.success === true) {
-        //   const activeItems = filterActiveArsip(data.data ?? []);
-        //   const resultData = await enrichArsipRelations(activeItems, req);
+        const activeItems = filterActiveArsip(data.data ?? []);
+        const resultData = await enrichArsipRelations(activeItems, req);
 
         res.status(200).json({
           status: true,
           statusCode: 200,
           message: "Success",
-          data: data.data,
+          data: resultData,
           cursor: null,
           hasMore: false,
         });

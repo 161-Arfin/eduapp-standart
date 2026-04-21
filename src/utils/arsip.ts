@@ -10,8 +10,9 @@ export const getKeteranganMeta = (value: unknown) => {
   };
 };
 
-export const getDefaultStatusFileByPackage = (canConfigureFileAccess: boolean) =>
-  canConfigureFileAccess ? undefined : 2;
+export const getDefaultStatusFileByPackage = (
+  canConfigureFileAccess: boolean,
+) => (canConfigureFileAccess ? undefined : 2);
 
 type AdditionalArsipPayloadOptions = {
   packageCapabilities: PackageCapabilities;
@@ -27,7 +28,7 @@ export const getRetentionStatus = (dateValue: string) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  return retentionDate >= today ? 1 : 0;
+  return retentionDate >= today;
 };
 
 export const getAdditionalArsipPayload = ({
@@ -39,7 +40,7 @@ export const getAdditionalArsipPayload = ({
   const payload: {
     jenis_arsip_id?: number[];
     masa_retensi?: string;
-    status_retensi?: number;
+    status_retensi?: boolean;
   } = {};
 
   const finalRetentionDate = packageCapabilities.canManageRetention

@@ -18,18 +18,12 @@ import DatepickerComponent from "@/views/components/atoms/DatepickerComponent";
 import MultipleFileInputComponent from "@/views/components/atoms/MultipleFileInputComponent";
 import RadioComponent from "@/views/components/atoms/RadioComponent";
 import { keteranganOptions, statusAksesOptions } from "@/utils/data/static";
-import { getPackageCapabilities } from "@/utils/packageCapabilities";
-import {
-  getAdditionalArsipPayload,
-  getDefaultStatusFileByPackage,
-} from "@/utils/arsip";
+import { getRetentionStatus } from "@/utils/arsip";
 
 interface Data {
   id: string;
   name: string;
 }
-
-const MAX_PDF_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 
 type BaseArsipPayload = {
   instansi_id: number;
@@ -47,13 +41,11 @@ type BaseArsipPayload = {
 type AdvancedArsipPayload = BaseArsipPayload & {
   jenis_arsip_id?: number[];
   masa_retensi: string;
-  status_retensi: number;
+  status_retensi: boolean;
 };
 
 const CreateArsip = () => {
   const { data }: any = useSession();
-  const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
-  const isPdfOnlyPackage = packageCapabilities.uploadMode === "pdf-only";
   const isRegularUser =
     data?.user?.usertypeId == 3 || data?.user?.usertypeId == 4;
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +60,6 @@ const CreateArsip = () => {
   const [userOption, setUserOption] = useState<any>([]);
   const [companySelected, setCompanySelected] = useState({});
   const [userSelected, setUserSelected] = useState({});
-  const [jenisArsip, setJenisArsip] = useState([]);
 
   function createDataOption(id: string, name: string): Data {
     return {
@@ -91,11 +82,18 @@ const CreateArsip = () => {
     return data?.user?.instansiName || "EduArsip";
   };
 
-  const hasOnlyPdfFiles = (files: FileList | File[]) =>
-    Array.from(files).every((file) => file.name.toLowerCase().endsWith(".pdf"));
+  const formatMasaRetensiPayload = (value: any) => {
+    if (!value) return "";
 
-  const hasValidPdfFileSize = (files: FileList | File[]) =>
-    Array.from(files).every((file) => file.size <= MAX_PDF_FILE_SIZE_BYTES);
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T00:00:00+07:00`;
+  };
 
   // Get Instansi Data Option
   const getDataInstansi = async () => {
@@ -211,58 +209,57 @@ const CreateArsip = () => {
     }
   };
 
-  const getJenisArsip = async () => {
-    if (
-      data?.user.usertypeId != undefined &&
-      data?.user.instansiId != undefined
-    ) {
-      try {
-        const response = await fetch(
-          `../../api/jenis-arsip/${data.user.usertypeId}`,
-          {
-            method: "GET",
-          },
-        );
-        const responseJson = await response.json();
+  // const getJenisArsip = async () => {
+  //   if (
+  //     data?.user.usertypeId != undefined &&
+  //     data?.user.instansiId != undefined
+  //   ) {
+  //     try {
+  //       const response = await fetch(
+  //         `../../api/jenis-arsip/${data.user.usertypeId}`,
+  //         {
+  //           method: "GET",
+  //         },
+  //       );
+  //       const responseJson = await response.json();
 
-        if (responseJson.status === false) {
-          if (data?.user?.usertypeId != 3) {
-            toast.error("Internal server error", {
-              position: "top-right",
-              autoClose: 5000,
-              hideProgressBar: true,
-              closeOnClick: false,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "light",
-            });
-          }
-          setJenisArsip([]);
-        }
+  //       if (responseJson.status === false) {
+  //         if (data?.user?.usertypeId != 3) {
+  //           toast.error("Internal server error", {
+  //             position: "top-right",
+  //             autoClose: 5000,
+  //             hideProgressBar: true,
+  //             closeOnClick: false,
+  //             pauseOnHover: true,
+  //             draggable: true,
+  //             progress: undefined,
+  //             theme: "light",
+  //           });
+  //         }
+  //       }
 
-        if (responseJson.data && responseJson.data.length > 0) {
-          const finalResult = responseJson.data.sort(
-            (a: any, b: any) => b.id_jenis - a.id_jenis,
-          );
-          setJenisArsip(finalResult);
-        } else if (responseJson.data && responseJson.data.length == 0) {
-          setJenisArsip([]);
-        }
-      } catch (error: any) {
-        toast.error("Internal server error", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-      }
-    }
-  };
+  // if (responseJson.data && responseJson.data.length > 0) {
+  //   const finalResult = responseJson.data.sort(
+  //     (a: any, b: any) => b.id_jenis - a.id_jenis,
+  //   );
+  //   setJenisArsip(finalResult);
+  // } else if (responseJson.data && responseJson.data.length == 0) {
+  //   setJenisArsip([]);
+  // }
+  //     } catch (error: any) {
+  //       toast.error("Internal server error", {
+  //         position: "top-right",
+  //         autoClose: 5000,
+  //         hideProgressBar: true,
+  //         closeOnClick: false,
+  //         pauseOnHover: true,
+  //         draggable: true,
+  //         progress: undefined,
+  //         theme: "light",
+  //       });
+  //     }
+  //   }
+  // };
 
   // Rendering awal auto fill
   useEffect(() => {
@@ -288,15 +285,8 @@ const CreateArsip = () => {
     noArsip: yup.string().required("Nomor Arsip harus diisi"),
     arsipName: yup.string().required("Nama Arsip harus diisi"),
     deskripsiArsip: yup.string().required("Deskripsi Arsip harus diisi"),
-    jenisArsipId: !packageCapabilities.canManageClassification
-      ? yup.array()
-      : yup.array().required("Jenis Arsip harus diisi"),
-    masaRetensi: !packageCapabilities.canManageRetention
-      ? yup.string()
-      : yup.string().required("Masa Retensi harus diisi"),
-    statusFile: !packageCapabilities.canConfigureFileAccess
-      ? yup.string()
-      : yup.string().required("Status akses file harus diisi"),
+    masaRetensi: yup.string().required("Masa Retensi harus diisi"),
+    statusFile: yup.string().required("Status akses file harus diisi"),
     keterangan: yup.string().required("Keterangan harus diisi"),
   });
 
@@ -321,19 +311,24 @@ const CreateArsip = () => {
   }, [data?.user.usertypeId]);
 
   // Rendering Awal
+  // useEffect(() => {
+  //   getJenisArsip();
+  //   if (data?.user.usertypeId == 5) {
+  //     getDataInstansi();
+  //   } else {
+  //     setIsLoading(false);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [data?.user]);
+
   useEffect(() => {
-    if (packageCapabilities.canManageClassification) {
-      getJenisArsip();
-    } else {
-      setJenisArsip([]);
-    }
-    if (data?.user.usertypeId == 5) {
+    if (data?.user?.usertypeId == 5) {
       getDataInstansi();
     } else {
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.user, packageCapabilities.canManageClassification]);
+  }, [data?.user]);
 
   // Handle formik
   const formik = useFormik<{
@@ -343,7 +338,6 @@ const CreateArsip = () => {
     noArsip: string;
     arsipName: string;
     deskripsiArsip: string;
-    jenisArsipId: Array<number>;
     masaRetensi: string;
     statusFile: string | number;
     keterangan: string;
@@ -356,7 +350,6 @@ const CreateArsip = () => {
       noArsip: "",
       arsipName: "",
       deskripsiArsip: "",
-      jenisArsipId: [],
       masaRetensi: "",
       statusFile: "",
       keterangan: "",
@@ -365,44 +358,6 @@ const CreateArsip = () => {
       setIsSaveLoading(true);
 
       try {
-        if (
-          isPdfOnlyPackage &&
-          values.fileArsip &&
-          !hasOnlyPdfFiles(values.fileArsip)
-        ) {
-          toast.error("Pada paket regular, file yang diizinkan hanya PDF.", {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          setIsSaveLoading(false);
-          return;
-        }
-
-        if (
-          isPdfOnlyPackage &&
-          values.fileArsip &&
-          !hasValidPdfFileSize(values.fileArsip)
-        ) {
-          toast.error("Ukuran file PDF maksimal 2 MB per file.", {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          setIsSaveLoading(false);
-          return;
-        }
-
         const instansiId =
           data?.user.usertypeId == 5
             ? values.instansiId
@@ -459,12 +414,9 @@ const CreateArsip = () => {
 
         const valueArsip: BaseArsipPayload | AdvancedArsipPayload = {
           ...basePayload,
-          ...getAdditionalArsipPayload({
-            packageCapabilities,
-            masaRetensi: values.masaRetensi,
-            jenisArsipId: values.jenisArsipId,
-            includeDefaults: true,
-          }),
+          // jenis_arsip_id: values.jenisArsipId,
+          masa_retensi: values.masaRetensi,
+          status_retensi: getRetentionStatus(values.masaRetensi),
         };
 
         // Create arsip
@@ -497,117 +449,68 @@ const CreateArsip = () => {
           const filesCount = values.fileArsip.length;
 
           if (filesCount > 0) {
-            if (isPdfOnlyPackage) {
-              const formData = new FormData();
+            const instansiName = resolveInstansiName(instansiId);
+            let resultStatus: any = [];
+            for (let i = 0; i < filesCount; i++) {
+              const fileName =
+                "(" +
+                new Date().getDate() +
+                "-" +
+                (new Date().getMonth() + 1) +
+                "-" +
+                new Date().getFullYear() +
+                " " +
+                new Date().getHours() +
+                ":" +
+                new Date().getMinutes() +
+                ":" +
+                new Date().getSeconds() +
+                ") " +
+                values.fileArsip[i].name;
 
-              Array.from(values.fileArsip as FileList | File[]).forEach(
-                (file) => {
-                  formData.append("files", file);
-                },
+              const imageRef = await ref(
+                storage,
+                `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
               );
 
-              const uploadResult = await fetch(
-                `../api/arsip-files/upload/${resultArsip.data.id_arsip}/${instansiId}`,
-                {
-                  method: "PUT",
-                  body: formData,
-                },
-              );
-              const uploadResultJson = await uploadResult.json();
+              await uploadBytes(imageRef, values.fileArsip[i])
+                .then(async (snapshot) => {
+                  await getDownloadURL(snapshot.ref)
+                    .then(async (url) => {
+                      const valueArsipFiles = {
+                        arsip_id: resultArsip.data.id_arsip,
+                        file_upload: fileName,
+                      };
 
-              if (!uploadResult.ok || uploadResultJson.status === false) {
-                dispatch(
-                  setAlertMessage({
-                    status: false,
-                    message:
-                      uploadResultJson.message ||
-                      "Data arsip berhasil disimpan, tetapi file PDF gagal diupload",
-                  }),
-                );
-                await push("/arsip");
-                return;
-              }
+                      const resultArsipFiles = await fetch(
+                        "../api/arsip-files/create",
+                        {
+                          method: "POST",
+                          body: JSON.stringify(valueArsipFiles),
+                        },
+                      );
+                      const responseResult = await resultArsipFiles.json();
 
-              dispatch(
-                setAlertMessage({
-                  status: true,
-                  message: "Data arsip berhasil disimpan",
-                }),
-              );
-              await push("/arsip");
-            } else {
-              const instansiName = resolveInstansiName(instansiId);
-              let resultStatus: any = [];
-              for (let i = 0; i < filesCount; i++) {
-                const fileName =
-                  "(" +
-                  new Date().getDate() +
-                  "-" +
-                  (new Date().getMonth() + 1) +
-                  "-" +
-                  new Date().getFullYear() +
-                  " " +
-                  new Date().getHours() +
-                  ":" +
-                  new Date().getMinutes() +
-                  ":" +
-                  new Date().getSeconds() +
-                  ") " +
-                  values.fileArsip[i].name;
-
-                const imageRef = await ref(
-                  storage,
-                  `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
-                );
-
-                await uploadBytes(imageRef, values.fileArsip[i])
-                  .then(async (snapshot) => {
-                    await getDownloadURL(snapshot.ref)
-                      .then(async (url) => {
-                        const valueArsipFiles = {
-                          arsip_id: resultArsip.data.id_arsip,
-                          file_upload: fileName,
+                      if (resultArsipFiles.status === 201) {
+                        const valueFirebase = {
+                          arsip_files_id: responseResult.data.id,
+                          link: url,
                         };
 
-                        const resultArsipFiles = await fetch(
-                          "../api/arsip-files/create",
+                        const resultFirebase = await fetch(
+                          "../api/firebase/create",
                           {
                             method: "POST",
-                            body: JSON.stringify(valueArsipFiles),
+                            body: JSON.stringify(valueFirebase),
                           },
                         );
-                        const responseResult = await resultArsipFiles.json();
 
-                        if (resultArsipFiles.status === 201) {
-                          const valueFirebase = {
-                            arsip_files_id: responseResult.data.id,
-                            link: url,
-                          };
-
-                          const resultFirebase = await fetch(
-                            "../api/firebase/create",
-                            {
-                              method: "POST",
-                              body: JSON.stringify(valueFirebase),
-                            },
-                          );
-
-                          if (resultFirebase.status === 201) {
-                            resultStatus.push(true);
-                          } else {
-                            resultStatus.push(false);
-                          }
+                        if (resultFirebase.status === 201) {
+                          resultStatus.push(true);
                         } else {
-                          dispatch(
-                            setAlertMessage({
-                              status: false,
-                              message: "Data user gagal disimpan",
-                            }),
-                          );
-                          setIsSaveLoading(false);
+                          resultStatus.push(false);
                         }
-                      })
-                      .catch(() => {
+                      } else {
                         dispatch(
                           setAlertMessage({
                             status: false,
@@ -615,42 +518,51 @@ const CreateArsip = () => {
                           }),
                         );
                         setIsSaveLoading(false);
-                      });
-                  })
-                  .catch(() => {
-                    dispatch(
-                      setAlertMessage({
-                        status: false,
-                        message: "Data user gagal disimpan",
-                      }),
-                    );
-                    setIsSaveLoading(false);
-                  });
-              }
-
-              if (result.status === 201 && resultStatus.length > 0) {
-                const errorHandler = resultStatus.filter(
-                  (status: boolean) => status == false,
-                );
-
-                if (errorHandler.length == 0) {
+                      }
+                    })
+                    .catch(() => {
+                      dispatch(
+                        setAlertMessage({
+                          status: false,
+                          message: "Data user gagal disimpan",
+                        }),
+                      );
+                      setIsSaveLoading(false);
+                    });
+                })
+                .catch(() => {
                   dispatch(
                     setAlertMessage({
-                      status: true,
-                      message: "Data arsip berhasil disimpan",
+                      status: false,
+                      message: "Data user gagal disimpan",
                     }),
                   );
-                  push("/arsip");
-                }
-              } else {
+                  setIsSaveLoading(false);
+                });
+            }
+
+            if (result.status === 201 && resultStatus.length > 0) {
+              const errorHandler = resultStatus.filter(
+                (status: boolean) => status == false,
+              );
+
+              if (errorHandler.length == 0) {
                 dispatch(
                   setAlertMessage({
-                    status: false,
-                    message: resultArsip.message || "Data arsip gagal disimpan",
+                    status: true,
+                    message: "Data arsip berhasil disimpan",
                   }),
                 );
                 push("/arsip");
               }
+            } else {
+              dispatch(
+                setAlertMessage({
+                  status: false,
+                  message: resultArsip.message || "Data arsip gagal disimpan",
+                }),
+              );
+              push("/arsip");
             }
           }
         } else {
@@ -680,17 +592,6 @@ const CreateArsip = () => {
   });
 
   useEffect(() => {
-    const defaultStatusFile = getDefaultStatusFileByPackage(
-      packageCapabilities.canConfigureFileAccess,
-    );
-
-    if (
-      defaultStatusFile !== undefined &&
-      formik.values.statusFile !== String(defaultStatusFile)
-    ) {
-      formik.setFieldValue("statusFile", String(defaultStatusFile), false);
-    }
-
     // Fetch user options for fixed instansi users and regular users
     if (data?.user?.instansiId != undefined) {
       if (isRegularUser || data?.user?.usertypeId != 5) {
@@ -703,7 +604,6 @@ const CreateArsip = () => {
     data?.user?.id,
     data?.user?.instansiId,
     data?.user?.usertypeId,
-    packageCapabilities.canConfigureFileAccess,
   ]);
 
   useEffect(() => {
@@ -834,49 +734,34 @@ const CreateArsip = () => {
                       />
                     </div>
                   </div>
-                  {/* Row */}
-                  {packageCapabilities.canManageClassification ? (
-                    <div className="flex flex-wrap mx-2 mb-0">
-                      <div className="mb-3 w-full flex-2 px-0 md:px-3">
-                        <MultipleCheckboxComponent
-                          label="Jenis Arsip"
-                          options={jenisArsip}
-                          formikOnChange={(e: any) =>
-                            formik.setFieldValue("jenisArsipId", e)
-                          }
-                          lengthCheckboxOptions="md:grid-cols-5"
-                          isPriority
-                        />
-                      </div>
-                    </div>
-                  ) : null}
+
                   {/* Row */}
                   <div className="flex flex-wrap mx-2 mb-0">
-                    {/* Col */}
-                    {packageCapabilities.canManageRetention ? (
-                      <div className="mb-3 w-full flex-2 px-0 md:px-3">
-                        <DatepickerComponent
-                          label="Masa Retensi"
-                          name="masaRetensi"
-                          activeDateDefault={formik.values.masaRetensi || null}
-                          format="DD-MM-YYYY"
-                          formikOnChange={(newValue: any) => {
-                            if (newValue) {
-                              const date = new Date(newValue);
-                              const valueDate = `${date.getFullYear()}-${
-                                date.getMonth() + 1
-                              }-${date.getDate()}`;
-                              formik.setFieldValue("masaRetensi", valueDate);
-                            } else if (newValue === null) {
-                              formik.setFieldValue("masaRetensi", "");
-                            }
-                          }}
-                          isInvalid={!!formik.errors.masaRetensi}
-                          errorMessage={formik.errors.masaRetensi}
-                          isPriority
-                        />
-                      </div>
-                    ) : null}
+                    <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                      <DatepickerComponent
+                        label="Masa Retensi"
+                        name="masaRetensi"
+                        activeDateDefault={formik.values.masaRetensi || null}
+                        format="DD-MM-YYYY"
+                        formikOnChange={(newValue: any) => {
+                          if (
+                            newValue &&
+                            typeof newValue.isValid === "function" &&
+                            newValue.isValid()
+                          ) {
+                            formik.setFieldValue(
+                              "masaRetensi",
+                              formatMasaRetensiPayload(newValue.toDate()),
+                            );
+                          } else if (newValue === null) {
+                            formik.setFieldValue("masaRetensi", "");
+                          }
+                        }}
+                        isInvalid={!!formik.errors.masaRetensi}
+                        errorMessage={formik.errors.masaRetensi}
+                        isPriority
+                      />
+                    </div>
                   </div>
                   {/* Row */}
                   <div className="flex flex-wrap mx-2 mb-0">
@@ -888,43 +773,10 @@ const CreateArsip = () => {
                         onChange={(e: any) => {
                           const file = e.target.files;
                           if (file) {
-                            if (isPdfOnlyPackage && !hasOnlyPdfFiles(file)) {
-                              dispatch(
-                                setAlertMessage({
-                                  status: false,
-                                  message:
-                                    "Pada paket regular, file yang diizinkan hanya PDF.",
-                                }),
-                              );
-                              e.target.value = "";
-                              return;
-                            }
-                            if (
-                              isPdfOnlyPackage &&
-                              !hasValidPdfFileSize(file)
-                            ) {
-                              dispatch(
-                                setAlertMessage({
-                                  status: false,
-                                  message:
-                                    "Ukuran file PDF maksimal 2 MB per file.",
-                                }),
-                              );
-                              e.target.value = "";
-                              return;
-                            }
                             formik.setFieldValue("fileArsip", file);
                           }
                         }}
-                        accept={
-                          isPdfOnlyPackage ? ".pdf,application/pdf" : undefined
-                        }
                       />
-                      {isPdfOnlyPackage ? (
-                        <p className="-mt-2 text-xs text-gray-500 italic font-light dark:text-neutral-400">
-                          Maksimal ukuran file PDF 2 MB.
-                        </p>
-                      ) : null}
                     </div>
                   </div>
                   {/* Row */}
@@ -967,61 +819,48 @@ const CreateArsip = () => {
                     {/* Col */}
                     <div className="mb-3 w-full md:w-full flex-2 px-0 md:px-3">
                       <div>
-                        <h2 className="text-base font-bold text-gray-500 dark:text-neutral-200">
+                        <h2 className="text-base font-bold text-gray-500">
                           Catatan :
                         </h2>
-                        <div className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
+                        <div className="mt-1 text-sm text-gray-500">
                           <ul className="list-disc list-inside">
-                            {isPdfOnlyPackage ? (
-                              <li>
-                                Jenis file yang boleh diupload:{" "}
-                                <span className="font-semibold">PDF</span>.
-                              </li>
-                            ) : null}
-                            {isPdfOnlyPackage ? (
-                              <li>
-                                Ukuran file PDF maksimal{" "}
-                                <span className="font-semibold">2 MB</span>.
-                              </li>
-                            ) : (
-                              <>
-                                <li>
-                                  Jenis File yang boleh diupload:
-                                  <br />
-                                  <span className="font-semibold pl-5">
-                                    TEXT
-                                  </span>
-                                  : txt, pdf, ppt, pptx, xls, xlsx, doc, docx.
-                                  <br />
-                                  <span className="font-semibold pl-5">
-                                    AUDIO
-                                  </span>
-                                  : mp3, flac, wav, m4a.
-                                  <br />
-                                  <span className="font-semibold pl-5">
-                                    VIDEO
-                                  </span>
-                                  : mp4, flv.
-                                  <br />
-                                  <span className="font-semibold pl-5">
-                                    FOTO
-                                  </span>
-                                  : jpg, jpeg, png.
-                                  <br />
-                                  <span className="font-semibold pl-5">
-                                    COMPRESSION
-                                  </span>
-                                  : zip, rar.
-                                </li>
-                                <li>
-                                  Disarankan kalau filenya banyak, lebih baik
-                                  buat dalam format{" "}
-                                  <span className="font-semibold">zip</span>{" "}
-                                  atau{" "}
-                                  <span className="font-semibold">rar</span>
-                                </li>
-                              </>
-                            )}
+                            <li>
+                              Jenis File yang bisa di upload:
+                              <br />
+                              <span className="font-semibold pl-5">
+                                PDF, Word, Excel dan Gambar
+                              </span>
+                            </li>
+                            <li className="mt-1">
+                              Ukuran file maksimal{" "}
+                              <span className="font-semibold">2 MB</span>.
+                            </li>
+                            {/* <li>
+                              Jenis File yang boleh diupload:
+                              <br />
+                              <span className="font-semibold pl-5">TEXT</span>:
+                              txt, pdf, ppt, pptx, xls, xlsx, doc, docx.
+                              <br />
+                              <span className="font-semibold pl-5">AUDIO</span>:
+                              mp3, flac, wav, m4a.
+                              <br />
+                              <span className="font-semibold pl-5">VIDEO</span>:
+                              mp4, flv.
+                              <br />
+                              <span className="font-semibold pl-5">FOTO</span>:
+                              jpg, jpeg, png.
+                              <br />
+                              <span className="font-semibold pl-5">
+                                COMPRESSION
+                              </span>
+                              : zip, rar.
+                            </li>
+                            <li>
+                              Disarankan kalau filenya banyak, lebih baik buat
+                              dalam format{" "}
+                              <span className="font-semibold">zip</span> atau{" "}
+                              <span className="font-semibold">rar</span>
+                            </li> */}
                           </ul>
                         </div>
                       </div>

@@ -36,9 +36,53 @@ const DatepickerComponent = ({
       <div className="max-w-full space-y-1">
         <div className="relative">
           <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <MobileDatePicker
+              name={name}
+              value={activeDateDefault ? dayjs(activeDateDefault) : null}
+              onChange={formikOnChange}
+              format={format}
+              openTo="year"
+              views={["year", "month", "day"]}
+              slotProps={{
+                textField: {
+                  size: "small",
+                  fullWidth: true,
+                  error: isInvalid,
+                  placeholder: format,
+                },
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "0.5rem",
+                  backgroundColor: "#ffffff",
+                  color: "#374151",
+                },
+                "& .MuiOutlinedInput-input": {
+                  color: "#6b7280",
+                  padding: "11.5px 14px",
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: isInvalid ? "#ef4444" : "#e5e7eb",
+                },
+                "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline":
+                  {
+                    borderColor: isInvalid ? "#ef4444" : "#d1d5db",
+                  },
+                "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                  {
+                    borderColor: isInvalid ? "#ef4444" : "#93c5fd",
+                  },
+              }}
+              className="rounded-lg"
+            />
+          </LocalizationProvider>
+
+          {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
             {activeDateDefault ? (
               <MobileDatePicker
                 name={name}
+                openTo="year"
+                views={["year", "month", "day"]}
                 slotProps={{
                   textField: {
                     size: "small",
@@ -57,7 +101,8 @@ const DatepickerComponent = ({
                     },
                   },
                 }}
-                defaultValue={dayjs(activeDateDefault)}
+                // defaultValue={dayjs(activeDateDefault)}
+                value={activeDateDefault ? dayjs(activeDateDefault) : null}
                 onChange={formikOnChange}
                 format={format}
                 sx={{
@@ -153,7 +198,7 @@ const DatepickerComponent = ({
                 <line x1="12" x2="12.01" y1="16" y2="16"></line>
               </svg>
             </div>
-          ) : null}
+          ) : null} */}
         </div>
         {isInvalid ? (
           <p className="text-sm text-red-600 mt-1">
@@ -166,4 +211,3 @@ const DatepickerComponent = ({
 };
 
 export default DatepickerComponent;
-

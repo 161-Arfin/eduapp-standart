@@ -107,7 +107,7 @@ type BaseArsipPayload = {
 type AdvancedArsipPayload = BaseArsipPayload & {
   jenis_arsip_id?: number[];
   masa_retensi: string;
-  status_retensi: number;
+  status_retensi: boolean;
 };
 
 const MAX_PDF_FILE_SIZE_BYTES = 2 * 1024 * 1024;
@@ -967,6 +967,35 @@ const TableArsip = () => {
               );
             }
 
+            // Format masa retensi
+            const formatMasaRetensi = (value?: string) => {
+              if (!value) return "-";
+
+              const parsedDate = new Date(value);
+              if (Number.isNaN(parsedDate.getTime())) return "-";
+
+              const months = [
+                "Januari",
+                "Februari",
+                "Maret",
+                "April",
+                "Mei",
+                "Juni",
+                "Juli",
+                "Agustus",
+                "September",
+                "Oktober",
+                "November",
+                "Desember",
+              ];
+
+              const date = parsedDate.getDate();
+              const month = months[parsedDate.getMonth()];
+              const year = parsedDate.getFullYear();
+
+              return `${date} ${month} ${year}`;
+            };
+
             // Keterangan
             const keteranganMeta = getKeteranganMeta(data.keterangan);
             const keterangan = keteranganMeta.label;
@@ -1006,7 +1035,7 @@ const TableArsip = () => {
               data.instansi_id,
               data.instansi_name,
               data.deskripsi_arsip,
-              data.masa_retensi,
+              formatMasaRetensi(data.masa_retensi),
               isAvailable,
               data.status_file,
               statusAccess,
@@ -1536,6 +1565,35 @@ const TableArsip = () => {
               );
             }
 
+            // Format masa retensi
+            const formatMasaRetensi = (value?: string) => {
+              if (!value) return "-";
+
+              const parsedDate = new Date(value);
+              if (Number.isNaN(parsedDate.getTime())) return "-";
+
+              const months = [
+                "Januari",
+                "Februari",
+                "Maret",
+                "April",
+                "Mei",
+                "Juni",
+                "Juli",
+                "Agustus",
+                "September",
+                "Oktober",
+                "November",
+                "Desember",
+              ];
+
+              const date = parsedDate.getDate();
+              const month = months[parsedDate.getMonth()];
+              const year = parsedDate.getFullYear();
+
+              return `${date} ${month} ${year}`;
+            };
+
             // Keterangan
             const keteranganMeta = getKeteranganMeta(data.keterangan);
             const keterangan = keteranganMeta.label;
@@ -1575,7 +1633,7 @@ const TableArsip = () => {
               data.instansi_id,
               data.instansi_name,
               data.deskripsi_arsip,
-              data.masa_retensi,
+              formatMasaRetensi(data.masa_retensi),
               isAvailable,
               data.status_file,
               statusAccess,
@@ -1676,6 +1734,35 @@ const TableArsip = () => {
               );
             }
 
+            // Format masa retensi
+            const formatMasaRetensi = (value?: string) => {
+              if (!value) return "-";
+
+              const parsedDate = new Date(value);
+              if (Number.isNaN(parsedDate.getTime())) return "-";
+
+              const months = [
+                "Januari",
+                "Februari",
+                "Maret",
+                "April",
+                "Mei",
+                "Juni",
+                "Juli",
+                "Agustus",
+                "September",
+                "Oktober",
+                "November",
+                "Desember",
+              ];
+
+              const date = parsedDate.getDate();
+              const month = months[parsedDate.getMonth()];
+              const year = parsedDate.getFullYear();
+
+              return `${date} ${month} ${year}`;
+            };
+
             // Keterangan
             const keteranganMeta = getKeteranganMeta(data.keterangan);
             const keterangan = keteranganMeta.label;
@@ -1715,7 +1802,7 @@ const TableArsip = () => {
               data.instansi_id,
               data.instansi_name,
               data.deskripsi_arsip,
-              data.masa_retensi,
+              formatMasaRetensi(data.masa_retensi),
               isAvailable,
               data.status_file,
               statusAccess,
@@ -1811,6 +1898,35 @@ const TableArsip = () => {
           );
         }
 
+        // Format masa retensi
+        const formatMasaRetensi = (value?: string) => {
+          if (!value) return "-";
+
+          const parsedDate = new Date(value);
+          if (Number.isNaN(parsedDate.getTime())) return "-";
+
+          const months = [
+            "Januari",
+            "Februari",
+            "Maret",
+            "April",
+            "Mei",
+            "Juni",
+            "Juli",
+            "Agustus",
+            "September",
+            "Oktober",
+            "November",
+            "Desember",
+          ];
+
+          const date = parsedDate.getDate();
+          const month = months[parsedDate.getMonth()];
+          const year = parsedDate.getFullYear();
+
+          return `${date} ${month} ${year}`;
+        };
+
         // Keterangan
         const keteranganMeta = getKeteranganMeta(data.keterangan);
         const keterangan = keteranganMeta.label;
@@ -1850,7 +1966,7 @@ const TableArsip = () => {
           data.instansi_id,
           data.instansi_name,
           data.deskripsi_arsip,
-          data.masa_retensi,
+          formatMasaRetensi(data.masa_retensi),
           isAvailable,
           data.status_file,
           statusAccess,

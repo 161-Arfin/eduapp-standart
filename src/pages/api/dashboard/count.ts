@@ -15,7 +15,7 @@ type UpstreamResponse = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Data>
+  res: NextApiResponse<Data>,
 ) {
   if (req.method !== "GET") {
     res.status(405).json({
@@ -27,14 +27,35 @@ export default async function handler(
   }
 
   try {
-    const { data: arsip } = await fetchExternalJson<UpstreamResponse>(
-      req,
-      "/v1/auth/arsip/count/byinstansi",
-      { method: "GET" }
-    );
+    const [{ data: arsip }, { data: arsipActive }, { data: arsipInactive }] =
+      await Promise.all([
+        fetchExternalJson<UpstreamResponse>(
+          req,
+          "/v1/auth/arsip/count/byinstansi",
+          {
+            method: "GET",
+          },
+        ),
+        fetchExternalJson<UpstreamResponse>(
+          req,
+          "/v1/auth/arsip/count-active/byinstansi",
+          {
+            method: "GET",
+          },
+        ),
+        fetchExternalJson<UpstreamResponse>(
+          req,
+          "/v1/auth/arsip/count-inactive/byinstansi",
+          {
+            method: "GET",
+          },
+        ),
+      ]);
 
     const dashboardData = {
-      arsip: arsip?.success ? arsip.data ?? 0 : 0,
+      arsip: arsip?.success ? (arsip.data ?? 0) : 0,
+      arsip_active: arsipActive?.success ? (arsipActive.data ?? 0) : 0,
+      arsip_inactive: arsipInactive?.success ? (arsipInactive.data ?? 0) : 0,
       peminjaman: 0,
       pengembalian: 0,
     };

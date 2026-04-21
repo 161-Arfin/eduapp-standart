@@ -7,7 +7,14 @@ import { CiCircleAlert } from "react-icons/ci";
 import { FaRegEdit, FaRegUserCircle } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import heroImage from "../../../../../public/assets/images/landscape-logo.png";
-import { FiArchive, FiBookmark, FiFileText, FiUsers } from "react-icons/fi";
+import {
+  FiArchive,
+  FiBookmark,
+  FiCheckCircle,
+  FiFileText,
+  FiUsers,
+  FiXCircle,
+} from "react-icons/fi";
 import { RiBuilding4Line } from "react-icons/ri";
 import { LuInbox, LuNotebookText } from "react-icons/lu";
 import { IoTrailSignOutline } from "react-icons/io5";
@@ -25,6 +32,11 @@ const DashboardContent = () => {
     database: <AiFillDatabase className="text-[#00a65a] font-black text-3xl" />,
     FaRegEdit: <FaRegEdit className="text-blue-600 font-black text-3xl" />,
     FiArchive: <FiArchive className="text-[#d81b60] font-black text-3xl" />,
+    FiCheckCircle: (
+      <FiCheckCircle className="text-green-600 font-black text-3xl" />
+    ),
+    FiXCircle: <FiXCircle className="text-red-600 font-black text-3xl" />,
+
     TbBuilding: (
       <RiBuilding4Line className="text-[#00a65a] font-black text-3xl" />
     ),
@@ -68,7 +80,8 @@ const DashboardContent = () => {
                         <hr className="my-3 border-gray-100" />
                         <p className="mt-1 text-xs text-gray-400 font-medium">
                           <CiCircleAlert className="h-5 w-5 inline-block text-red-500 mr-1" />
-                          Harap Menggunakan Aplikasi Ini Sebijak Mungkin Karena Tindakan Yang Anda Lakukan Akan Tercatat Oleh Sistem.
+                          Harap Menggunakan Aplikasi Ini Sebijak Mungkin Karena
+                          Tindakan Yang Anda Lakukan Akan Tercatat Oleh Sistem.
                         </p>
                       </div>
                     </div>

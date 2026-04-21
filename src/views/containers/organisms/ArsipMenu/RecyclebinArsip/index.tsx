@@ -8,7 +8,6 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ToastContainer, toast } from "react-toastify";
 import Swal from "sweetalert2";
-import { getPackageCapabilities } from "@/utils/packageCapabilities";
 import { getKeteranganMeta } from "@/utils/arsip";
 
 interface Data {
@@ -17,12 +16,7 @@ interface Data {
   arsip_name: string;
   instansi_id: number;
   instansi_name: string;
-  cabang_id: number;
-  cabang_name: string;
-  divisi_id: number;
-  divisi_name: string;
   deskripsi_arsip: string;
-
   masa_retensi: string;
   is_available: React.JSX.Element;
   status_file_id: number;
@@ -38,16 +32,14 @@ interface Data {
 
 interface Column {
   id:
-  | "no_arsip"
-  | "arsip_name"
-  | "divisi_name"
-  | "cabang_name"
-  | "instansi_name"
-  | "is_available"
-  | "status_file"
-  | "status_retensi"
-  | "keterangan"
-  | "action";
+    | "no_arsip"
+    | "arsip_name"
+    | "is_available"
+    | "status_file"
+    | "status_retensi"
+    | "masa_retensi"
+    | "keterangan"
+    | "action";
   label: string;
   minWidth?: number;
   align?: "left" | "right" | "center";
@@ -63,7 +55,6 @@ const RecyclebinArsip = () => {
   const [lastDoc, setLastDoc] = useState([]);
   const [arrData, setArrData] = useState([]);
   const [isLoadingFetchMore, setIsLoadingFetchMore] = useState(false);
-  const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
 
   const resolveInstansiName = (arsipId?: string | number) => {
     if (arsipId !== undefined && arsipId !== null && Array.isArray(rows)) {
@@ -111,19 +102,9 @@ const RecyclebinArsip = () => {
   const columns: readonly Column[] = [
     { id: "no_arsip", label: "No. Arsip", minWidth: 100 },
     { id: "arsip_name", label: "Nama Arsip", minWidth: 150 },
-    ...(packageCapabilities.canManageRetention
-      ? ([
-        { id: "divisi_name", label: "Divisi", minWidth: 100 },
-        { id: "cabang_name", label: "Cabang", minWidth: 100 },
-        { id: "instansi_name", label: "Instansi", minWidth: 100 },
-      ] as Column[])
-      : ([] as Column[])),
     { id: "status_file", label: "Status Akses", minWidth: 100 },
-    ...(packageCapabilities.canManageRetention
-      ? ([
-        { id: "status_retensi", label: "Status Retensi", minWidth: 100 },
-      ] as Column[])
-      : ([] as Column[])),
+    { id: "status_retensi", label: "Status Retensi", minWidth: 100 },
+    { id: "masa_retensi", label: "Masa Retensi", minWidth: 100 },
     { id: "keterangan", label: "Keterangan", minWidth: 100 },
     {
       id: "action",
@@ -154,12 +135,7 @@ const RecyclebinArsip = () => {
     arsip_name: string,
     instansi_id: number,
     instansi_name: string,
-    cabang_id: number,
-    cabang_name: string,
-    divisi_id: number,
-    divisi_name: string,
     deskripsi_arsip: string,
-
     masa_retensi: string,
     is_available: React.JSX.Element,
     status_file_id: number,
@@ -178,12 +154,7 @@ const RecyclebinArsip = () => {
       arsip_name,
       instansi_id,
       instansi_name,
-      cabang_id,
-      cabang_name,
-      divisi_id,
-      divisi_name,
       deskripsi_arsip,
-
       masa_retensi,
       is_available,
       status_file_id,
@@ -209,6 +180,34 @@ const RecyclebinArsip = () => {
       </span>
     );
 
+  const formatMasaRetensi = (value?: string) => {
+    if (!value) return "-";
+
+    const parsedDate = new Date(value);
+    if (Number.isNaN(parsedDate.getTime())) return "-";
+
+    const months = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+
+    const date = parsedDate.getDate();
+    const month = months[parsedDate.getMonth()];
+    const year = parsedDate.getFullYear();
+
+    return `${date} ${month} ${year}`;
+  };
+
   // Get data for recycle bin table
   const getData = async () => {
     if (
@@ -223,18 +222,16 @@ const RecyclebinArsip = () => {
         const responseJson = await response.json();
 
         if (responseJson.status === false) {
-          if (packageCapabilities.canManageRetention) {
-            toast.error("Internal server error", {
-              position: "top-right",
-              autoClose: 5000,
-              hideProgressBar: true,
-              closeOnClick: false,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "light",
-            });
-          }
+          toast.error("Internal server error", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
           setRows([]);
           setIsLoading(false);
           return;
@@ -314,13 +311,8 @@ const RecyclebinArsip = () => {
               data.arsip_name,
               data.instansi_id,
               data.instansi_name,
-              data.cabang_id,
-              data.cabang_name,
-              data.divisi_id,
-              data.divisi_name,
               data.deskripsi_arsip,
-
-              data.masa_retensi,
+              formatMasaRetensi(data.masa_retensi),
               isAvailable,
               data.status_file,
               statusAccess,
@@ -590,13 +582,8 @@ const RecyclebinArsip = () => {
               data.arsip_name,
               data.instansi_id,
               data.instansi_name,
-              data.cabang_id,
-              data.cabang_name,
-              data.divisi_id,
-              data.divisi_name,
               data.deskripsi_arsip,
-
-              data.masa_retensi,
+              formatMasaRetensi(data.masa_retensi),
               isAvailable,
               data.status_file,
               statusAccess,
