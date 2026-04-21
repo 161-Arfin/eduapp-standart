@@ -1,0 +1,1056 @@
+﻿import { useFormik } from "formik";
+import { useSession } from "next-auth/react";
+import React, { useEffect, useState } from "react";
+import * as yup from "yup";
+import { useDispatch } from "react-redux";
+import { setAlertMessage } from "@/lib/redux/actions/alertMessageSlice";
+import { useRouter } from "next/router";
+import { ToastContainer, toast } from "react-toastify";
+import CardContainerComponent from "@/views/components/atoms/CardContainerComponent";
+import TextInputComponent from "@/views/components/atoms/TextInputComponent";
+import SelectComponent from "@/views/components/atoms/SelectComponent";
+import SpinLoadingComponent from "@/views/components/atoms/SpinLoadingComponent";
+import ButtonComponent from "@/views/components/atoms/ButtonComponent";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { storage } from "@/lib/firebase/init";
+import MultipleCheckboxComponent from "@/views/components/atoms/MultipleCheckboxComponent";
+import DatepickerComponent from "@/views/components/atoms/DatepickerComponent";
+import MultipleFileInputComponent from "@/views/components/atoms/MultipleFileInputComponent";
+import RadioComponent from "@/views/components/atoms/RadioComponent";
+import { keteranganOptions, statusAksesOptions } from "@/utils/data/static";
+import { getPackageCapabilities } from "@/utils/packageCapabilities";
+import {
+  getAdditionalArsipPayload,
+  getDefaultStatusFileByPackage,
+} from "@/utils/arsip";
+
+interface Data {
+  id: string;
+  name: string;
+}
+
+const MAX_PDF_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+
+type BaseArsipPayload = {
+  instansi_id: number;
+  user_id: number;
+  no_arsip: string;
+  arsip_name: string;
+  deskripsi_arsip: string;
+  keterangan: number;
+  status_file: string | number;
+  is_available: boolean;
+  created_by: string;
+  is_delete_arsip: boolean;
+};
+
+type AdvancedArsipPayload = BaseArsipPayload & {
+  jenis_arsip_id?: number[];
+  masa_retensi: string;
+  status_retensi: number;
+};
+
+const CreateArsip = () => {
+  const { data }: any = useSession();
+  const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
+  const isPdfOnlyPackage = packageCapabilities.uploadMode === "pdf-only";
+  const isRegularUser =
+    data?.user?.usertypeId == 3 || data?.user?.usertypeId == 4;
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOwnerUserLoading, setIsOwnerUserLoading] = useState(false);
+  const [isSaveLoading, setIsSaveLoading] = useState(false);
+  const dispatch = useDispatch();
+  const { push } = useRouter();
+  const [schemaValidationInstansi, setSchemaValidationInstansi] =
+    useState<any>();
+  const [schemaValidationUser, setSchemaValidationUser] = useState<any>();
+  const [companyOption, setCompanyOption] = useState([]);
+  const [userOption, setUserOption] = useState<any>([]);
+  const [companySelected, setCompanySelected] = useState({});
+  const [userSelected, setUserSelected] = useState({});
+  const [jenisArsip, setJenisArsip] = useState([]);
+
+  function createDataOption(id: string, name: string): Data {
+    return {
+      id: id,
+      name: name,
+    };
+  }
+
+  const resolveInstansiName = (instansiId?: string | number) => {
+    if (data?.user?.usertypeId == 5) {
+      const selectedInstansi = (companyOption as any[]).find(
+        (item: any) => item.id == instansiId,
+      );
+
+      if (selectedInstansi?.name) {
+        return selectedInstansi.name;
+      }
+    }
+
+    return data?.user?.instansiName || "EduArsip";
+  };
+
+  const hasOnlyPdfFiles = (files: FileList | File[]) =>
+    Array.from(files).every((file) => file.name.toLowerCase().endsWith(".pdf"));
+
+  const hasValidPdfFileSize = (files: FileList | File[]) =>
+    Array.from(files).every((file) => file.size <= MAX_PDF_FILE_SIZE_BYTES);
+
+  // Get Instansi Data Option
+  const getDataInstansi = async () => {
+    if (
+      data?.user.usertypeId != undefined &&
+      data?.user.instansiId != undefined
+    ) {
+      const response = await fetch(
+        `../../api/company/${data.user.usertypeId}/${data.user.instansiId}`,
+        {
+          method: "GET",
+        },
+      );
+      const responseJson = await response.json();
+
+      if (responseJson.status === false) {
+        if (data?.user?.usertypeId != 3) {
+          toast.error("Internal server error: " + responseJson.message, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+        }
+        setCompanyOption([]);
+      }
+
+      if (responseJson.data && responseJson.data.length > 0) {
+        const result = responseJson.data.map((data: any, index: number) => {
+          return createDataOption(data.id_instansi, data.instansi_name);
+        });
+        const listOption: any = [
+          { id: 0, name: "- Pilih Instansi -" },
+          ...result,
+        ];
+
+        setCompanyOption(listOption);
+      }
+      setIsLoading(false);
+    }
+  };
+
+  // Get Owner Archive Data Option
+  const getDataOwnerUser = async () => {
+    const instansiId =
+      data?.user.usertypeId == 5
+        ? formik.values.instansiId
+        : data?.user.instansiId;
+
+    if (data?.user.usertypeId != undefined && instansiId) {
+      try {
+        setIsOwnerUserLoading(true);
+        setUserOption([{ id: 0, name: "Memuat user..." }]);
+
+        const response = await fetch(
+          `../../api/user/user-options/${data.user.usertypeId}/${instansiId}`,
+          {
+            method: "GET",
+          },
+        );
+        const responseJson = await response.json();
+
+        if (responseJson.status === false) {
+          if (data?.user?.usertypeId != 3) {
+            toast.error("Internal server error: " + responseJson.message, {
+              position: "top-right",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: false,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: "light",
+            });
+          }
+          setUserOption([{ id: 0, name: "- Gagal memuat user -" }]);
+          return;
+        }
+
+        if (responseJson.data && responseJson.data.length > 0) {
+          const result = responseJson.data.map((data: any, index: number) => {
+            return createDataOption(data.id_users, data.name);
+          });
+          const shouldAutoSelectSingleUser = result.length === 1;
+          const listOption: any = shouldAutoSelectSingleUser
+            ? result
+            : [{ id: 0, name: "- Pilih User -" }, ...result];
+
+          setUserOption(listOption);
+          if (!formik.values.userId || shouldAutoSelectSingleUser) {
+            const currentUserOption =
+              result.find((item: any) => item.id == data?.user?.id) ??
+              result[0];
+            if (currentUserOption) {
+              formik.setFieldValue("userId", String(currentUserOption.id));
+              setUserSelected(currentUserOption);
+            }
+          }
+        } else {
+          setUserOption([{ id: 0, name: "- Tidak ada user -" }]);
+          setUserSelected({ id: 0, name: "- Tidak ada user -" });
+        }
+      } catch (error: any) {
+        setUserOption([{ id: 0, name: "- Gagal memuat user -" }]);
+        setUserSelected({ id: 0, name: "- Gagal memuat user -" });
+      } finally {
+        setIsOwnerUserLoading(false);
+      }
+    }
+  };
+
+  const getJenisArsip = async () => {
+    if (
+      data?.user.usertypeId != undefined &&
+      data?.user.instansiId != undefined
+    ) {
+      try {
+        const response = await fetch(
+          `../../api/jenis-arsip/${data.user.usertypeId}`,
+          {
+            method: "GET",
+          },
+        );
+        const responseJson = await response.json();
+
+        if (responseJson.status === false) {
+          if (data?.user?.usertypeId != 3) {
+            toast.error("Internal server error", {
+              position: "top-right",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: false,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: "light",
+            });
+          }
+          setJenisArsip([]);
+        }
+
+        if (responseJson.data && responseJson.data.length > 0) {
+          const finalResult = responseJson.data.sort(
+            (a: any, b: any) => b.id_jenis - a.id_jenis,
+          );
+          setJenisArsip(finalResult);
+        } else if (responseJson.data && responseJson.data.length == 0) {
+          setJenisArsip([]);
+        }
+      } catch (error: any) {
+        toast.error("Internal server error", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+      }
+    }
+  };
+
+  // Rendering awal auto fill
+  useEffect(() => {
+    if (userOption) {
+      setUserSelected(
+        userOption.filter((item: any) => item.id == formik.values.userId)[0],
+      );
+    }
+    if (companyOption) {
+      setCompanySelected(
+        companyOption.filter(
+          (item: any) => item.id == formik.values.instansiId,
+        )[0],
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyOption, userOption]);
+
+  // Schema validation
+  const schema = yup.object().shape({
+    instansiId: schemaValidationInstansi,
+    userId: schemaValidationUser,
+    noArsip: yup.string().required("Nomor Arsip harus diisi"),
+    arsipName: yup.string().required("Nama Arsip harus diisi"),
+    deskripsiArsip: yup.string().required("Deskripsi Arsip harus diisi"),
+    jenisArsipId: !packageCapabilities.canManageClassification
+      ? yup.array()
+      : yup.array().required("Jenis Arsip harus diisi"),
+    masaRetensi: !packageCapabilities.canManageRetention
+      ? yup.string()
+      : yup.string().required("Masa Retensi harus diisi"),
+    statusFile: !packageCapabilities.canConfigureFileAccess
+      ? yup.string()
+      : yup.string().required("Status akses file harus diisi"),
+    keterangan: yup.string().required("Keterangan harus diisi"),
+  });
+
+  // Schema Validation Controling
+  useEffect(() => {
+    if (data?.user.usertypeId == 5) {
+      setSchemaValidationInstansi(
+        yup.string().required("Instansi harus diisi"),
+      );
+      setSchemaValidationUser(
+        yup.string().required("Kepemilikan arsip harus diisi"),
+      );
+    } else if (data?.user.usertypeId == 3) {
+      setSchemaValidationInstansi(yup.string());
+      setSchemaValidationUser(yup.string());
+    } else {
+      setSchemaValidationInstansi(yup.string());
+      setSchemaValidationUser(
+        yup.string().required("Kepemilikan arsip harus diisi"),
+      );
+    }
+  }, [data?.user.usertypeId]);
+
+  // Rendering Awal
+  useEffect(() => {
+    if (packageCapabilities.canManageClassification) {
+      getJenisArsip();
+    } else {
+      setJenisArsip([]);
+    }
+    if (data?.user.usertypeId == 5) {
+      getDataInstansi();
+    } else {
+      setIsLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.user, packageCapabilities.canManageClassification]);
+
+  // Handle formik
+  const formik = useFormik<{
+    id: string;
+    instansiId: string;
+    userId: string;
+    noArsip: string;
+    arsipName: string;
+    deskripsiArsip: string;
+    jenisArsipId: Array<number>;
+    masaRetensi: string;
+    statusFile: string | number;
+    keterangan: string;
+    fileArsip?: File;
+  }>({
+    initialValues: {
+      id: "",
+      instansiId: "",
+      userId: "",
+      noArsip: "",
+      arsipName: "",
+      deskripsiArsip: "",
+      jenisArsipId: [],
+      masaRetensi: "",
+      statusFile: "",
+      keterangan: "",
+    },
+    onSubmit: async (values: any) => {
+      setIsSaveLoading(true);
+
+      try {
+        if (
+          isPdfOnlyPackage &&
+          values.fileArsip &&
+          !hasOnlyPdfFiles(values.fileArsip)
+        ) {
+          toast.error("Pada paket regular, file yang diizinkan hanya PDF.", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+          setIsSaveLoading(false);
+          return;
+        }
+
+        if (
+          isPdfOnlyPackage &&
+          values.fileArsip &&
+          !hasValidPdfFileSize(values.fileArsip)
+        ) {
+          toast.error("Ukuran file PDF maksimal 2 MB per file.", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+          setIsSaveLoading(false);
+          return;
+        }
+
+        const instansiId =
+          data?.user.usertypeId == 5
+            ? values.instansiId
+            : data?.user.instansiId;
+        const userId =
+          data?.user.usertypeId == 3 || data?.user.usertypeId == 4
+            ? data?.user.id
+            : values.userId;
+        // const normalizedInstansiId = Number(instansiId);
+        // const normalizedUserId = Number(userId);
+
+        // if (!normalizedInstansiId || Number.isNaN(normalizedInstansiId)) {
+        //   toast.error("Instansi tidak valid", {
+        //     position: "top-right",
+        //     autoClose: 5000,
+        //     hideProgressBar: true,
+        //     closeOnClick: false,
+        //     pauseOnHover: true,
+        //     draggable: true,
+        //     progress: undefined,
+        //     theme: "light",
+        //   });
+        //   setIsSaveLoading(false);
+        //   return;
+        // }
+
+        // if (!normalizedUserId || Number.isNaN(normalizedUserId)) {
+        //   toast.error("Kepemilikan arsip tidak valid", {
+        //     position: "top-right",
+        //     autoClose: 5000,
+        //     hideProgressBar: true,
+        //     closeOnClick: false,
+        //     pauseOnHover: true,
+        //     draggable: true,
+        //     progress: undefined,
+        //     theme: "light",
+        //   });
+        //   setIsSaveLoading(false);
+        //   return;
+        // }
+
+        const basePayload: BaseArsipPayload = {
+          instansi_id: instansiId,
+          user_id: userId,
+          no_arsip: values.noArsip,
+          arsip_name: values.arsipName,
+          deskripsi_arsip: values.deskripsiArsip,
+          keterangan: Number(values.keterangan),
+          status_file: Number(values.statusFile),
+          is_available: true,
+          created_by: data?.user?.username || data?.user?.name || "",
+          is_delete_arsip: false,
+        };
+
+        const valueArsip: BaseArsipPayload | AdvancedArsipPayload = {
+          ...basePayload,
+          ...getAdditionalArsipPayload({
+            packageCapabilities,
+            masaRetensi: values.masaRetensi,
+            jenisArsipId: values.jenisArsipId,
+            includeDefaults: true,
+          }),
+        };
+
+        // Create arsip
+        const result = await fetch("/api/arsip/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(valueArsip),
+        });
+        const resultArsip = await result.json();
+
+        if (result.status !== 201) {
+          toast.error(resultArsip.message || "Data arsip gagal disimpan", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+          setIsSaveLoading(false);
+          return;
+        }
+
+        // Tambah File Arsip
+        if (values.fileArsip) {
+          const filesCount = values.fileArsip.length;
+
+          if (filesCount > 0) {
+            if (isPdfOnlyPackage) {
+              const formData = new FormData();
+
+              Array.from(values.fileArsip as FileList | File[]).forEach(
+                (file) => {
+                  formData.append("files", file);
+                },
+              );
+
+              const uploadResult = await fetch(
+                `../api/arsip-files/upload/${resultArsip.data.id_arsip}/${instansiId}`,
+                {
+                  method: "PUT",
+                  body: formData,
+                },
+              );
+              const uploadResultJson = await uploadResult.json();
+
+              if (!uploadResult.ok || uploadResultJson.status === false) {
+                dispatch(
+                  setAlertMessage({
+                    status: false,
+                    message:
+                      uploadResultJson.message ||
+                      "Data arsip berhasil disimpan, tetapi file PDF gagal diupload",
+                  }),
+                );
+                await push("/arsip");
+                return;
+              }
+
+              dispatch(
+                setAlertMessage({
+                  status: true,
+                  message: "Data arsip berhasil disimpan",
+                }),
+              );
+              await push("/arsip");
+            } else {
+              const instansiName = resolveInstansiName(instansiId);
+              let resultStatus: any = [];
+              for (let i = 0; i < filesCount; i++) {
+                const fileName =
+                  "(" +
+                  new Date().getDate() +
+                  "-" +
+                  (new Date().getMonth() + 1) +
+                  "-" +
+                  new Date().getFullYear() +
+                  " " +
+                  new Date().getHours() +
+                  ":" +
+                  new Date().getMinutes() +
+                  ":" +
+                  new Date().getSeconds() +
+                  ") " +
+                  values.fileArsip[i].name;
+
+                const imageRef = await ref(
+                  storage,
+                  `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
+                );
+
+                await uploadBytes(imageRef, values.fileArsip[i])
+                  .then(async (snapshot) => {
+                    await getDownloadURL(snapshot.ref)
+                      .then(async (url) => {
+                        const valueArsipFiles = {
+                          arsip_id: resultArsip.data.id_arsip,
+                          file_upload: fileName,
+                        };
+
+                        const resultArsipFiles = await fetch(
+                          "../api/arsip-files/create",
+                          {
+                            method: "POST",
+                            body: JSON.stringify(valueArsipFiles),
+                          },
+                        );
+                        const responseResult = await resultArsipFiles.json();
+
+                        if (resultArsipFiles.status === 201) {
+                          const valueFirebase = {
+                            arsip_files_id: responseResult.data.id,
+                            link: url,
+                          };
+
+                          const resultFirebase = await fetch(
+                            "../api/firebase/create",
+                            {
+                              method: "POST",
+                              body: JSON.stringify(valueFirebase),
+                            },
+                          );
+
+                          if (resultFirebase.status === 201) {
+                            resultStatus.push(true);
+                          } else {
+                            resultStatus.push(false);
+                          }
+                        } else {
+                          dispatch(
+                            setAlertMessage({
+                              status: false,
+                              message: "Data user gagal disimpan",
+                            }),
+                          );
+                          setIsSaveLoading(false);
+                        }
+                      })
+                      .catch(() => {
+                        dispatch(
+                          setAlertMessage({
+                            status: false,
+                            message: "Data user gagal disimpan",
+                          }),
+                        );
+                        setIsSaveLoading(false);
+                      });
+                  })
+                  .catch(() => {
+                    dispatch(
+                      setAlertMessage({
+                        status: false,
+                        message: "Data user gagal disimpan",
+                      }),
+                    );
+                    setIsSaveLoading(false);
+                  });
+              }
+
+              if (result.status === 201 && resultStatus.length > 0) {
+                const errorHandler = resultStatus.filter(
+                  (status: boolean) => status == false,
+                );
+
+                if (errorHandler.length == 0) {
+                  dispatch(
+                    setAlertMessage({
+                      status: true,
+                      message: "Data arsip berhasil disimpan",
+                    }),
+                  );
+                  push("/arsip");
+                }
+              } else {
+                dispatch(
+                  setAlertMessage({
+                    status: false,
+                    message: resultArsip.message || "Data arsip gagal disimpan",
+                  }),
+                );
+                push("/arsip");
+              }
+            }
+          }
+        } else {
+          dispatch(
+            setAlertMessage({
+              status: true,
+              message: "Data arsip berhasil disimpan",
+            }),
+          );
+          await push("/arsip");
+        }
+      } catch (error: any) {
+        toast.error(error?.message || "Data arsip gagal disimpan", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+        setIsSaveLoading(false);
+      }
+    },
+    validationSchema: schema,
+  });
+
+  useEffect(() => {
+    const defaultStatusFile = getDefaultStatusFileByPackage(
+      packageCapabilities.canConfigureFileAccess,
+    );
+
+    if (
+      defaultStatusFile !== undefined &&
+      formik.values.statusFile !== String(defaultStatusFile)
+    ) {
+      formik.setFieldValue("statusFile", String(defaultStatusFile), false);
+    }
+
+    // Fetch user options for fixed instansi users and regular users
+    if (data?.user?.instansiId != undefined) {
+      if (isRegularUser || data?.user?.usertypeId != 5) {
+        getDataOwnerUser();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isRegularUser,
+    data?.user?.id,
+    data?.user?.instansiId,
+    data?.user?.usertypeId,
+    packageCapabilities.canConfigureFileAccess,
+  ]);
+
+  useEffect(() => {
+    if (!isRegularUser && data?.user.usertypeId == 5) {
+      if (formik.values.instansiId != "0" && formik.values.instansiId != "") {
+        getDataOwnerUser();
+      } else {
+        setUserOption([{ id: 0, name: "- Pilih Instansi dulu -" }]);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formik.values.instansiId, isRegularUser, data?.user.usertypeId]);
+
+  return (
+    <>
+      {/* Toast */}
+      <ToastContainer />
+      {/* Row */}
+      <div className="flex flex-wrap mt-0 mb-16 mx-0">
+        {isLoading == false ? (
+          <div className="flex-2 w-full max-w-full px-0 mt-0">
+            {/* Form */}
+            <form onSubmit={formik.handleSubmit}>
+              {/* Card */}
+              <CardContainerComponent actionButtonCard={() => null}>
+                {/* Col */}
+                <div className="flex-2 w-full max-w-full px-0 mt-0">
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    {data?.user.usertypeId == 5 ? (
+                      <div className="mb-3 w-full md:w-1/3 flex-2 px-0 md:px-3">
+                        <SelectComponent
+                          id="instansiId"
+                          label="Instansi"
+                          options={companyOption}
+                          selectedValue={(e: any) => {
+                            if (e.id != 0) {
+                              formik.setFieldValue("instansiId", e.id);
+                            } else {
+                              formik.setFieldValue("instansiId", "");
+                            }
+                          }}
+                          defaultValue={companySelected}
+                          isInvalid={!!formik.errors.instansiId}
+                          errorMessage={formik.errors.instansiId}
+                          isPriority
+                        />
+                      </div>
+                    ) : null}
+                    {/* Col */}
+                  </div>
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    {data?.user.usertypeId == 5 ||
+                    data?.user.usertypeId == 1 ||
+                    data?.user.usertypeId == 2 ||
+                    data?.user.usertypeId == 3 ? (
+                      <div
+                        className={`mb-3 w-full md:w-1/2 flex-2 px-0 md:px-3`}
+                      >
+                        <SelectComponent
+                          id="userId"
+                          label="Kepemilikan Arsip"
+                          options={userOption}
+                          selectedValue={(e: any) => {
+                            if (e.id != 0) {
+                              formik.setFieldValue("userId", e.id);
+                            } else {
+                              formik.setFieldValue("userId", "");
+                            }
+                          }}
+                          defaultValue={userSelected}
+                          isInvalid={!!formik.errors.userId}
+                          errorMessage={formik.errors.userId}
+                          disabled={isOwnerUserLoading}
+                          isPriority
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                      <TextInputComponent
+                        label="Nomor Arsip"
+                        value={formik.values.noArsip}
+                        handleChange={(e) =>
+                          formik.setFieldValue("noArsip", e.target.value)
+                        }
+                        isInvalid={!!formik.errors.noArsip}
+                        errorMessage={formik.errors.noArsip}
+                        isPriority
+                      />
+                    </div>
+                  </div>
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                      <TextInputComponent
+                        label="Nama Arsip"
+                        value={formik.values.arsipName}
+                        handleChange={(e) =>
+                          formik.setFieldValue("arsipName", e.target.value)
+                        }
+                        isInvalid={!!formik.errors.arsipName}
+                        errorMessage={formik.errors.arsipName}
+                        isPriority
+                      />
+                    </div>
+                  </div>
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                      <TextInputComponent
+                        label="Deskripsi"
+                        value={formik.values.deskripsiArsip}
+                        handleChange={(e) =>
+                          formik.setFieldValue("deskripsiArsip", e.target.value)
+                        }
+                        isInvalid={!!formik.errors.deskripsiArsip}
+                        errorMessage={formik.errors.deskripsiArsip}
+                        isPriority
+                      />
+                    </div>
+                  </div>
+                  {/* Row */}
+                  {packageCapabilities.canManageClassification ? (
+                    <div className="flex flex-wrap mx-2 mb-0">
+                      <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                        <MultipleCheckboxComponent
+                          label="Jenis Arsip"
+                          options={jenisArsip}
+                          formikOnChange={(e: any) =>
+                            formik.setFieldValue("jenisArsipId", e)
+                          }
+                          lengthCheckboxOptions="md:grid-cols-5"
+                          isPriority
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    {packageCapabilities.canManageRetention ? (
+                      <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                        <DatepickerComponent
+                          label="Masa Retensi"
+                          name="masaRetensi"
+                          activeDateDefault={formik.values.masaRetensi || null}
+                          format="DD-MM-YYYY"
+                          formikOnChange={(newValue: any) => {
+                            if (newValue) {
+                              const date = new Date(newValue);
+                              const valueDate = `${date.getFullYear()}-${
+                                date.getMonth() + 1
+                              }-${date.getDate()}`;
+                              formik.setFieldValue("masaRetensi", valueDate);
+                            } else if (newValue === null) {
+                              formik.setFieldValue("masaRetensi", "");
+                            }
+                          }}
+                          isInvalid={!!formik.errors.masaRetensi}
+                          errorMessage={formik.errors.masaRetensi}
+                          isPriority
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                      <MultipleFileInputComponent
+                        label="Tambah File"
+                        name="fileArsip"
+                        onChange={(e: any) => {
+                          const file = e.target.files;
+                          if (file) {
+                            if (isPdfOnlyPackage && !hasOnlyPdfFiles(file)) {
+                              dispatch(
+                                setAlertMessage({
+                                  status: false,
+                                  message:
+                                    "Pada paket regular, file yang diizinkan hanya PDF.",
+                                }),
+                              );
+                              e.target.value = "";
+                              return;
+                            }
+                            if (
+                              isPdfOnlyPackage &&
+                              !hasValidPdfFileSize(file)
+                            ) {
+                              dispatch(
+                                setAlertMessage({
+                                  status: false,
+                                  message:
+                                    "Ukuran file PDF maksimal 2 MB per file.",
+                                }),
+                              );
+                              e.target.value = "";
+                              return;
+                            }
+                            formik.setFieldValue("fileArsip", file);
+                          }
+                        }}
+                        accept={
+                          isPdfOnlyPackage ? ".pdf,application/pdf" : undefined
+                        }
+                      />
+                      {isPdfOnlyPackage ? (
+                        <p className="-mt-2 text-xs text-gray-500 italic font-light dark:text-neutral-400">
+                          Maksimal ukuran file PDF 2 MB.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                      <RadioComponent
+                        label="Status Akses File"
+                        name="status_file"
+                        options={statusAksesOptions}
+                        lengthOptions="md:grid-cols-2"
+                        formikOnChange={(e: any) =>
+                          formik.setFieldValue("statusFile", e)
+                        }
+                        formikValue={String(formik.values.statusFile)}
+                        isPriority
+                      />
+                    </div>
+                  </div>
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                      <RadioComponent
+                        label="Keterangan"
+                        name="keterangan"
+                        options={keteranganOptions}
+                        lengthOptions="md:grid-cols-2"
+                        formikOnChange={(e: any) =>
+                          formik.setFieldValue("keterangan", e)
+                        }
+                        formikValue={String(formik.values.keterangan)}
+                        isPriority
+                      />
+                    </div>
+                  </div>
+                  <hr className="my-3 dark:border-gray-700" />
+                  {/* Row */}
+                  {/* Catatan */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    <div className="mb-3 w-full md:w-full flex-2 px-0 md:px-3">
+                      <div>
+                        <h2 className="text-base font-bold text-gray-500 dark:text-neutral-200">
+                          Catatan :
+                        </h2>
+                        <div className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
+                          <ul className="list-disc list-inside">
+                            {isPdfOnlyPackage ? (
+                              <li>
+                                Jenis file yang boleh diupload:{" "}
+                                <span className="font-semibold">PDF</span>.
+                              </li>
+                            ) : null}
+                            {isPdfOnlyPackage ? (
+                              <li>
+                                Ukuran file PDF maksimal{" "}
+                                <span className="font-semibold">2 MB</span>.
+                              </li>
+                            ) : (
+                              <>
+                                <li>
+                                  Jenis File yang boleh diupload:
+                                  <br />
+                                  <span className="font-semibold pl-5">
+                                    TEXT
+                                  </span>
+                                  : txt, pdf, ppt, pptx, xls, xlsx, doc, docx.
+                                  <br />
+                                  <span className="font-semibold pl-5">
+                                    AUDIO
+                                  </span>
+                                  : mp3, flac, wav, m4a.
+                                  <br />
+                                  <span className="font-semibold pl-5">
+                                    VIDEO
+                                  </span>
+                                  : mp4, flv.
+                                  <br />
+                                  <span className="font-semibold pl-5">
+                                    FOTO
+                                  </span>
+                                  : jpg, jpeg, png.
+                                  <br />
+                                  <span className="font-semibold pl-5">
+                                    COMPRESSION
+                                  </span>
+                                  : zip, rar.
+                                </li>
+                                <li>
+                                  Disarankan kalau filenya banyak, lebih baik
+                                  buat dalam format{" "}
+                                  <span className="font-semibold">zip</span>{" "}
+                                  atau{" "}
+                                  <span className="font-semibold">rar</span>
+                                </li>
+                              </>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <hr className="my-3 dark:border-gray-700" />
+                  {/* Row */}
+                  <div className="flex flex-wrap mx-2 mb-0">
+                    {/* Col */}
+                    <div className="mb-3 w-full md:w-full flex-2 px-0 md:px-3">
+                      <ButtonComponent
+                        label="Simpan"
+                        isLoading={isSaveLoading}
+                        color="info"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContainerComponent>
+            </form>
+          </div>
+        ) : (
+          <div className="w-full h-[400px] flex justify-center items-center">
+            <SpinLoadingComponent />
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+export default CreateArsip;

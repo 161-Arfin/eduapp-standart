@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@theme {
+  --color-scheme: light;
+}
+
+/* Force Light Mode Everywhere */
+:root,
+[data-theme='dark'],
+.dark {
+  --background: #ffffff !important;
+  --foreground: #111827 !important;
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  --border: #f3f4f6 !important;
+  /* gray-100 */
+  border-color: #f3f4f6 !important;
+}
+
+body {
+  background-color: #f9fafb !important;
+  /* bg-gray-50 */
+  color: #111827 !important;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Override any dark variants */
+@media (prefers-color-scheme: dark) {
+
+  :root,
+  body,
+  .dark {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    color-scheme: light !important;
+  }
+}
+
+hr {
+  border-top: 1px solid #f3f4f6 !important;
+  /* gray-100 */
+}
+
+/* Fix Card Size to match Tailwind 3 defaults */
+* {
+  line-height: 1.25;
+  /* Reset line-height to be tighter */
+}
+
+/* 2. Tambahkan CSS custom dari proyek lama Anda (untuk dropdown dll) */
+.collapsed-enter {
+  height: 0;
+  box-shadow: none;
+  opacity: 0;
+}
+
+.collapsed-enter-active {
+  height: 150px;
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+  opacity: 1;
+  transition: height 300ms, opacity 500ms, box-shadow 900ms;
+}
+
+.collapsed-enter-done {
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+  opacity: 1;
+}
+
+.collapsed-exit {
+  height: 150px;
+  opacity: 1;
+}
+
+.collapsed-exit-active {
+  height: 0;
+  margin-bottom: 0 !important;
+  opacity: 0;
+  transition: height 300ms, opacity 150ms;
+}
+
+.collapsed-exit-done {
+  height: 0;
+  margin-bottom: 0 !important;
+  opacity: 0;
+}
+
+/* Dropdown Navbar */
+.dropdown-navbar-enter {
+  opacity: 0 !important;
+  transform: translateY(-10px) !important;
+}
+
+.dropdown-navbar-enter-active {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  transition: opacity 300ms ease-out, transform 300ms ease-out !important;
+}
+
+.dropdown-navbar-enter-done {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.dropdown-navbar-exit {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.dropdown-navbar-exit-active {
+  opacity: 0 !important;
+  transform: translateY(-10px) !important;
+  transition: opacity 200ms ease-in, transform 200ms ease-in !important;
+}
+
+.dropdown-navbar-exit-done {
+  opacity: 0 !important;
+  transform: translateY(-10px) !important;
+}

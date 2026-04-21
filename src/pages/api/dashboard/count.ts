@@ -1,0 +1,50 @@
+import type { NextApiRequest, NextApiResponse } from "next";
+import { fetchExternalJson, sendApiError } from "@/lib/api/external";
+
+type Data = {
+  status: boolean;
+  statusCode: number;
+  message?: string;
+  data?: object;
+};
+
+type UpstreamResponse = {
+  success?: boolean;
+  data?: number;
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<Data>
+) {
+  if (req.method !== "GET") {
+    res.status(405).json({
+      status: false,
+      statusCode: 405,
+      message: "Method not allowed",
+    });
+    return;
+  }
+
+  try {
+    const { data: arsip } = await fetchExternalJson<UpstreamResponse>(
+      req,
+      "/v1/auth/arsip/count/byinstansi",
+      { method: "GET" }
+    );
+
+    const dashboardData = {
+      arsip: arsip?.success ? arsip.data ?? 0 : 0,
+      peminjaman: 0,
+      pengembalian: 0,
+    };
+
+    res.status(200).json({
+      status: true,
+      statusCode: 200,
+      data: dashboardData,
+    });
+  } catch (error: unknown) {
+    sendApiError(res, error);
+  }
+}
