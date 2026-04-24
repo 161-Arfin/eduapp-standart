@@ -217,6 +217,13 @@ const Sidebar = () => {
           ) : null;
         }
       )}
+      <SidebarItemSingleComponent
+        icon={icon["FaRegFileAlt"]}
+        text="Laporan"
+        menuController="arsip_laporan"
+        menuFunction=""
+      />
+
       <hr className="my-3 border-gray-100" />
       <div
         className={`pt-0 pb-2 px-3 text-xs text-gray-400 text-left font-weight-semibold uppercase tracking-widest ${expanded ? "" : "hidden"
@@ -241,7 +248,9 @@ const Sidebar = () => {
             submenu.length > 0 ? (
               data?.user.usertypeId == 5 ||
                 data?.user.usertypeId == 1 ||
-                data?.user.usertypeId == 2 ? (
+                data?.user.usertypeId == 2 ||
+                data?.user.usertypeId == 4 ||
+                data?.user.usertypeId == 3 ? (
                 <SidebarItemCollapseComponent
                   key={index}
                   icon={icon[menuIcon]}
