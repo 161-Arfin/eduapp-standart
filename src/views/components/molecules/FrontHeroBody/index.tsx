@@ -18,21 +18,7 @@ interface Data {
   arsip_name: string;
   instansi_id?: number;
   instansi_name?: string;
-  cabang_id?: number;
-  cabang_name?: string;
-  divisi_id?: number;
-  divisi_name?: string;
   deskripsi_arsip: string;
-  lokasi_name?: string;
-  lokasi_id?: number;
-  rak_name?: string;
-  rak_id?: string;
-  baris_name?: string;
-  baris_id?: string;
-  box_name?: string;
-  box_id?: string;
-  map_name?: string;
-  map_id?: string;
   masa_retensi?: string;
   is_available: React.JSX.Element;
   status_file_id: number;
@@ -50,12 +36,11 @@ const FrontHeroBody = () => {
   const { data }: any = useSession();
   const dispatch = useDispatch();
   const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
-  const isRegularPackage = packageCapabilities.key === "regular";
   const [optionButton, setOptionButton] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [isLoadingFetchMore, setIsLoadingFetchMore] = useState(false);
-  const [onChangeValue, setOnChangeValue] = React.useState("");
+  const [onChangeValue, setOnChangeValue] = useState<string>("");
   const [rows, setRows] = useState<any>();
   const [lastDoc, setLastDoc] = useState([]);
   const [arrData, setArrData] = useState([]);
@@ -79,21 +64,7 @@ const FrontHeroBody = () => {
     arsip_name: string,
     instansi_id: number | undefined,
     instansi_name: string | undefined,
-    cabang_id: number | undefined,
-    cabang_name: string | undefined,
-    divisi_id: number | undefined,
-    divisi_name: string | undefined,
     deskripsi_arsip: string,
-    lokasi_name: string | undefined,
-    lokasi_id: number | undefined,
-    rak_name: string | undefined,
-    rak_id: string | undefined,
-    baris_name: string | undefined,
-    baris_id: string | undefined,
-    box_name: string | undefined,
-    box_id: string | undefined,
-    map_name: string | undefined,
-    map_id: string | undefined,
     masa_retensi: string | undefined,
     is_available: React.JSX.Element,
     status_file_id: number,
@@ -112,21 +83,7 @@ const FrontHeroBody = () => {
       arsip_name,
       instansi_id,
       instansi_name,
-      cabang_id,
-      cabang_name,
-      divisi_id,
-      divisi_name,
       deskripsi_arsip,
-      lokasi_name,
-      lokasi_id,
-      rak_name,
-      rak_id,
-      baris_name,
-      baris_id,
-      box_name,
-      box_id,
-      map_name,
-      map_id,
       masa_retensi,
       is_available,
       status_file_id,
@@ -173,6 +130,17 @@ const FrontHeroBody = () => {
     );
   };
 
+  const createStatusAccessBadge = (statusFile: unknown) =>
+    Number(statusFile) === 1 ? (
+      <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        Private
+      </span>
+    ) : (
+      <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+        Public
+      </span>
+    );
+
   const getInstansi = async () => {
     if (data?.user.usertypeId != undefined) {
       const response = await fetch(
@@ -208,125 +176,59 @@ const FrontHeroBody = () => {
     }
   };
 
-  const getCabang = async () => {
-    if (data?.user.instansiId != undefined) {
-      const response = await fetch(
-        `../../api/branch/bycompany/${data.user.instansiId}`,
-        {
-          method: "GET",
-        },
-      );
-      const responseJson = await response.json();
-
-      if (responseJson.status === false) {
-        toast.error("Internal server error: " + responseJson.message, {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-        setOptionButton([]);
-      }
-
-      if (responseJson.data && responseJson.data.length > 0) {
-        const result = responseJson.data.map((data: any, index: number) => {
-          return createDataOption(data.id_cabang, data.cabang_name);
-        });
-
-        setOptionButton(result);
-      }
-      setIsLoading(false);
-    }
-  };
-
-  const getDivisi = async () => {
-    if (data?.user.cabangId != undefined) {
-      const response = await fetch(
-        `../../api/division/bybranch/${data.user.cabangId}`,
-        {
-          method: "GET",
-        },
-      );
-      const responseJson = await response.json();
-
-      if (responseJson.status === false) {
-        toast.error("Internal server error: " + responseJson.message, {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-        setOptionButton([]);
-      }
-
-      if (responseJson.data && responseJson.data.length > 0) {
-        const result = responseJson.data.map((data: any, index: number) => {
-          return createDataOption(data.id_divisi, data.divisi_name);
-        });
-
-        setOptionButton(result);
-      }
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (data?.user.usertypeId) {
-      if (isRegularPackage) {
+      if (data?.user.usertypeId === 5) {
+        getInstansi();
+      } else {
         setOptionButton([]);
         setIsLoading(false);
-      } else if (data?.user.usertypeId === 5) {
-        getInstansi();
-      } else if (data?.user.usertypeId === 1) {
-        getCabang();
-      } else {
-        if (data?.user.cabangId != undefined) {
-          getDivisi();
-        } else {
-          setIsLoading(false);
-        }
       }
     } else if (data === null) {
       // If session is definitely null (not loading), stop loading spinner
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.user.usertypeId, data, isRegularPackage]);
+  }, [data?.user.usertypeId, data]);
 
   // Search Arsip
-  const handleSearch = async (searchQuery: any) => {
+  const handleSearch = async (
+    searchQuery: string,
+    resultFrom = searchResultFrom,
+    resultFromId = idSearchResultFrom,
+  ) => {
     setIsLoadingSearch(true);
-    let link = "";
-    if (searchResultFrom == "getAll") {
-      if (searchQuery == "") {
-        link = `../../api/arsip/keyword/null`;
-      } else {
-        link = `../../api/arsip/keyword/${searchQuery}`;
+    try {
+      const keyword = searchQuery.trim() || "null";
+      const link =
+        resultFrom == "getAll"
+          ? `../../api/arsip/keyword/${encodeURIComponent(keyword)}`
+          : `../../api/arsip/keyword/${encodeURIComponent(keyword)}/${resultFromId}`;
+
+      const dataArsip = await fetch(link, {
+        method: "GET",
+      });
+
+      const dataArsipJson = await dataArsip.json();
+
+      if (dataArsipJson.status === false) {
+        toast.error(dataArsipJson.message || "Pencarian arsip gagal", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+        setRows([]);
+        setTotalData("0");
+        return;
       }
-    } else {
-      if (searchQuery == "") {
-        link = `../../api/arsip/keyword/null/${idSearchResultFrom}`;
-      } else {
-        link = `../../api/arsip/keyword/${searchQuery}/${idSearchResultFrom}`;
-      }
-    }
 
-    const dataArsip = await fetch(link, {
-      method: "GET",
-    });
-
-    const dataArsipJson = await dataArsip.json();
-
-    if (dataArsipJson.data?.length > 0) {
-      const result = dataArsipJson.data.map((data: any) => {
+      if (dataArsipJson.data?.length > 0) {
+        const result = dataArsipJson.data.map((data: any) => {
         // Status peminjaman
         let isAvailable: React.JSX.Element;
         if (data.is_available == true) {
@@ -343,33 +245,7 @@ const FrontHeroBody = () => {
           );
         }
 
-        // Status Akses
-        let statusAccess: React.JSX.Element = <></>;
-        if (data.status_file == 0) {
-          statusAccess = (
-            <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              Private
-            </span>
-          );
-        } else if (data.status_file == 1) {
-          statusAccess = (
-            <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-              Level Instansi
-            </span>
-          );
-        } else if (data.status_file == 2) {
-          statusAccess = (
-            <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-              Level Cabang
-            </span>
-          );
-        } else if (data.status_file == 3) {
-          statusAccess = (
-            <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-              Level Divisi
-            </span>
-          );
-        }
+        const statusAccess = createStatusAccessBadge(data.status_file);
 
         const statusRetensi = createRetentionBadge(data.status_retensi);
 
@@ -411,21 +287,7 @@ const FrontHeroBody = () => {
           data.arsip_name,
           data.instansi_id,
           data.instansi_name,
-          data.cabang_id,
-          data.cabang_name,
-          data.divisi_id,
-          data.divisi_name,
           data.deskripsi_arsip,
-          data.lokasi_name,
-          data.lokasi_id,
-          data.rak_name,
-          data.rak_id,
-          data.baris_name,
-          data.baris_id,
-          data.box_name,
-          data.box_id,
-          data.map_name,
-          data.map_id,
           data.masa_retensi,
           isAvailable,
           data.status_file,
@@ -438,18 +300,33 @@ const FrontHeroBody = () => {
           data.user_name,
           data.user_id,
         );
+        });
+        const finalResult = result.sort((a: any, b: any) => b.id - a.id);
+
+        setRows(finalResult);
+        setLastDoc(dataArsipJson.cursor);
+        setTotalData(String(dataArsipJson.total ?? finalResult.length));
+      } else {
+        setRows([]);
+        setTotalData("0");
+      }
+    } catch (error: any) {
+      toast.error("Internal server error. Error: " + error.message, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: true,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
       });
-      const finalResult = result.sort((a: any, b: any) => b.id - a.id);
-
-      setRows(finalResult);
-      setLastDoc(dataArsipJson.cursor);
-      setTotalData(dataArsipJson.total);
-    } else {
       setRows([]);
+      setTotalData("0");
+    } finally {
+      setArrData([]);
+      setIsLoadingSearch(false);
     }
-
-    setArrData([]);
-    setIsLoadingSearch(false);
   };
 
   // Fetch more data when scroll to bottom
@@ -513,33 +390,7 @@ const FrontHeroBody = () => {
               );
             }
 
-            // Status Akses
-            let statusAccess: React.JSX.Element = <></>;
-            if (data.status_file == 0) {
-              statusAccess = (
-                <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  Private
-                </span>
-              );
-            } else if (data.status_file == 1) {
-              statusAccess = (
-                <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                  Level Instansi
-                </span>
-              );
-            } else if (data.status_file == 2) {
-              statusAccess = (
-                <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Level Cabang
-                </span>
-              );
-            } else if (data.status_file == 3) {
-              statusAccess = (
-                <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                  Level Divisi
-                </span>
-              );
-            }
+            const statusAccess = createStatusAccessBadge(data.status_file);
 
             const statusRetensi = createRetentionBadge(data.status_retensi);
 
@@ -581,21 +432,7 @@ const FrontHeroBody = () => {
               data.arsip_name,
               data.instansi_id,
               data.instansi_name,
-              data.cabang_id,
-              data.cabang_name,
-              data.divisi_id,
-              data.divisi_name,
               data.deskripsi_arsip,
-              data.lokasi_name,
-              data.lokasi_id,
-              data.rak_name,
-              data.rak_id,
-              data.baris_name,
-              data.baris_id,
-              data.box_name,
-              data.box_id,
-              data.map_name,
-              data.map_id,
               data.masa_retensi,
               isAvailable,
               data.status_file,
@@ -642,16 +479,25 @@ const FrontHeroBody = () => {
     }
   };
 
+  const openSearchModal = () => {
+    dispatch(setShowModal({ searchArsipModal: true }));
+    setSearchResultFrom("getAll");
+    setIdSearchResultFrom(undefined);
+    handleSearch(onChangeValue, "getAll", undefined);
+  };
+
+  const submitSearch = (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    openSearchModal();
+  };
+
+  const submitSearchInModal = () => {
+    handleSearch(onChangeValue, searchResultFrom, idSearchResultFrom);
+  };
+
   useEffect(() => {
     setArrData([]);
   }, [data?.user]);
-
-  useEffect(() => {
-    if (searchResultFrom != "") {
-      handleSearch(onChangeValue);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchResultFrom]);
 
   useEffect(() => {
     if (isShowModal["searchArsipModal"] == false) {
@@ -676,6 +522,9 @@ const FrontHeroBody = () => {
         isLoadingFetchMoreData={isLoadingFetchMore}
         totalData={totalData}
         searchResultFrom={searchResultFrom}
+        searchValue={onChangeValue}
+        onSearchValueChange={setOnChangeValue}
+        onSearchSubmit={submitSearchInModal}
       />
 
       <div
@@ -694,7 +543,7 @@ const FrontHeroBody = () => {
 
             <div className="mt-7 sm:mt-12 mx-auto max-w-xl relative">
               {/* <!-- Form --> */}
-              <form>
+              <form onSubmit={(event) => submitSearch(event)}>
                 <div className="relative z-10 flex gap-x-3 p-3 bg-white border border-gray-200 rounded-lg shadow-lg shadow-gray-100">
                   <div className="w-full">
                     <label className="block text-sm text-gray-700 font-medium">
@@ -706,18 +555,15 @@ const FrontHeroBody = () => {
                       id="hs-search-article-1"
                       className="py-2.5 px-4 block w-full border-transparent rounded-lg focus:border-blue-500 focus:ring-blue-500"
                       placeholder="Cari arsip"
+                      value={onChangeValue ?? ""}
                       onChange={(e) => setOnChangeValue(e.target.value)}
                     />
                   </div>
                   <div>
-                    <a
+                    <button
+                      type="submit"
                       className="size-11 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
-                      href="#"
-                      onClick={() => {
-                        dispatch(setShowModal({ searchArsipModal: true }));
-                        setSearchResultFrom("getAll");
-                        // handleSearch(onChangeValue);
-                      }}
+                      aria-label="Cari arsip"
                     >
                       <svg
                         className="shrink-0 size-5"
@@ -734,7 +580,7 @@ const FrontHeroBody = () => {
                         <circle cx="11" cy="11" r="8" />
                         <path d="m21 21-4.3-4.3" />
                       </svg>
-                    </a>
+                    </button>
                   </div>
                 </div>
               </form>
@@ -794,18 +640,10 @@ const FrontHeroBody = () => {
             </div>
 
             <p className="text-sm mt-14 text-gray-600">
-              {isRegularPackage
-                ? "Cari arsip dengan kata kunci di atas."
-                : `Cari berdasarkan ${
-                    data?.user.usertypeId == 5
-                      ? "instansi"
-                      : data?.user.usertypeId == 1
-                        ? "cabang"
-                        : "divisi"
-                  } dengan kata kunci di atas.`}
+              Cari arsip dengan kata kunci di atas.
             </p>
 
-            {!isRegularPackage ? (
+            {optionButton.length > 0 ? (
               <div className="mt-10 sm:mt-5 mx-auto max-w-4xl">
                 {optionButton.map((option: DataOption) => (
                   <a
@@ -816,6 +654,7 @@ const FrontHeroBody = () => {
                       dispatch(setShowModal({ searchArsipModal: true }));
                       setSearchResultFrom(option.name);
                       setIdSearchResultFrom(option.id);
+                      handleSearch(onChangeValue, option.name, option.id);
                     }}
                   >
                     <svg

@@ -104,7 +104,7 @@ const RecyclebinArsip = () => {
     { id: "arsip_name", label: "Nama Arsip", minWidth: 150 },
     { id: "status_file", label: "Status Akses", minWidth: 100 },
     { id: "status_retensi", label: "Status Retensi", minWidth: 100 },
-    { id: "masa_retensi", label: "Masa Retensi", minWidth: 100 },
+    // { id: "masa_retensi", label: "Masa Retensi", minWidth: 100 },
     { id: "keterangan", label: "Keterangan", minWidth: 100 },
     {
       id: "action",
@@ -176,7 +176,7 @@ const RecyclebinArsip = () => {
       </span>
     ) : (
       <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-        Publis
+        Public
       </span>
     );
 

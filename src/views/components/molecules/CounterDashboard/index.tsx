@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import CardDashboardComponent from "../../atoms/CardDashboardComponent";
 import { dashboardCounter } from "@/utils/data/static";
 import { useSession } from "next-auth/react";
@@ -11,8 +11,11 @@ type CounterDashboardProps = {
 
 const CounterDashboard = ({ icon }: CounterDashboardProps) => {
   const { data }: any = useSession();
+  const usertypeId = data?.user?.usertypeId;
+  const instansiId = data?.user?.instansiId;
   const [count, setCount] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
+  const counterFetchKeyRef = useRef<string | null>(null);
   const emptyDashboardData = {
     arsip: 0,
     arsip_active: 0,
@@ -84,11 +87,19 @@ const CounterDashboard = ({ icon }: CounterDashboardProps) => {
   };
 
   useEffect(() => {
-    if (data?.user.usertypeId != undefined) {
-      countDashboard();
+    if (usertypeId == undefined || instansiId == undefined) {
+      return;
     }
+
+    const fetchKey = `${usertypeId}:${instansiId}`;
+    if (counterFetchKeyRef.current === fetchKey) {
+      return;
+    }
+    counterFetchKeyRef.current = fetchKey;
+
+    countDashboard();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.user]);
+  }, [usertypeId, instansiId]);
 
   return (
     <>

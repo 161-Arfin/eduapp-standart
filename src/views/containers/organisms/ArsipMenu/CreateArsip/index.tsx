@@ -11,8 +11,6 @@ import TextInputComponent from "@/views/components/atoms/TextInputComponent";
 import SelectComponent from "@/views/components/atoms/SelectComponent";
 import SpinLoadingComponent from "@/views/components/atoms/SpinLoadingComponent";
 import ButtonComponent from "@/views/components/atoms/ButtonComponent";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { storage } from "@/lib/firebase/init";
 import MultipleCheckboxComponent from "@/views/components/atoms/MultipleCheckboxComponent";
 import DatepickerComponent from "@/views/components/atoms/DatepickerComponent";
 import MultipleFileInputComponent from "@/views/components/atoms/MultipleFileInputComponent";
@@ -44,8 +42,50 @@ type AdvancedArsipPayload = BaseArsipPayload & {
   status_retensi: boolean;
 };
 
+const ALLOWED_ARCHIVE_FILE_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".bmp",
+];
+
+const ALLOWED_ARCHIVE_FILE_ACCEPT = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".bmp",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/bmp",
+].join(",");
+
 const CreateArsip = () => {
   const { data }: any = useSession();
+
+  // useEffect(() => {
+  //   console.log("SESSION DATA:", data);
+  // }, [data]);
   const isRegularUser =
     data?.user?.usertypeId == 3 || data?.user?.usertypeId == 4;
   const [isLoading, setIsLoading] = useState(true);
@@ -68,20 +108,6 @@ const CreateArsip = () => {
     };
   }
 
-  const resolveInstansiName = (instansiId?: string | number) => {
-    if (data?.user?.usertypeId == 5) {
-      const selectedInstansi = (companyOption as any[]).find(
-        (item: any) => item.id == instansiId,
-      );
-
-      if (selectedInstansi?.name) {
-        return selectedInstansi.name;
-      }
-    }
-
-    return data?.user?.instansiName || "EduArsip";
-  };
-
   const formatMasaRetensiPayload = (value: any) => {
     if (!value) return "";
 
@@ -94,6 +120,14 @@ const CreateArsip = () => {
 
     return `${year}-${month}-${day}T00:00:00+07:00`;
   };
+
+  const hasOnlyAllowedFiles = (files: FileList | File[]) =>
+    Array.from(files).every((file) => {
+      const fileName = file.name.toLowerCase();
+      return ALLOWED_ARCHIVE_FILE_EXTENSIONS.some((extension) =>
+        fileName.endsWith(extension),
+      );
+    });
 
   // Get Instansi Data Option
   const getDataInstansi = async () => {
@@ -181,6 +215,7 @@ const CreateArsip = () => {
           const result = responseJson.data.map((data: any, index: number) => {
             return createDataOption(data.id_users, data.name);
           });
+
           const shouldAutoSelectSingleUser = result.length === 1;
           const listOption: any = shouldAutoSelectSingleUser
             ? result
@@ -341,7 +376,7 @@ const CreateArsip = () => {
     masaRetensi: string;
     statusFile: string | number;
     keterangan: string;
-    fileArsip?: File;
+    fileArsip?: FileList;
   }>({
     initialValues: {
       id: "",
@@ -356,6 +391,21 @@ const CreateArsip = () => {
     },
     onSubmit: async (values: any) => {
       setIsSaveLoading(true);
+
+      if (values.fileArsip && !hasOnlyAllowedFiles(values.fileArsip)) {
+        toast.error("File yang diizinkan hanya PDF, Word, Excel, dan gambar.", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+        setIsSaveLoading(false);
+        return;
+      }
 
       try {
         const instansiId =
@@ -412,11 +462,13 @@ const CreateArsip = () => {
           is_delete_arsip: false,
         };
 
+        const masaRetensiPayload = formatMasaRetensiPayload(values.masaRetensi);
+
         const valueArsip: BaseArsipPayload | AdvancedArsipPayload = {
           ...basePayload,
           // jenis_arsip_id: values.jenisArsipId,
-          masa_retensi: values.masaRetensi,
-          status_retensi: getRetentionStatus(values.masaRetensi),
+          masa_retensi: masaRetensiPayload,
+          status_retensi: getRetentionStatus(masaRetensiPayload),
         };
 
         // Create arsip
@@ -445,135 +497,43 @@ const CreateArsip = () => {
         }
 
         // Tambah File Arsip
-        if (values.fileArsip) {
-          const filesCount = values.fileArsip.length;
+        if (values.fileArsip && values.fileArsip.length > 0) {
+          const formData = new FormData();
 
-          if (filesCount > 0) {
-            const instansiName = resolveInstansiName(instansiId);
-            let resultStatus: any = [];
-            for (let i = 0; i < filesCount; i++) {
-              const fileName =
-                "(" +
-                new Date().getDate() +
-                "-" +
-                (new Date().getMonth() + 1) +
-                "-" +
-                new Date().getFullYear() +
-                " " +
-                new Date().getHours() +
-                ":" +
-                new Date().getMinutes() +
-                ":" +
-                new Date().getSeconds() +
-                ") " +
-                values.fileArsip[i].name;
+          Array.from(values.fileArsip as FileList).forEach((file) => {
+            formData.append("files", file);
+          });
 
-              const imageRef = await ref(
-                storage,
-                `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
-              );
-
-              await uploadBytes(imageRef, values.fileArsip[i])
-                .then(async (snapshot) => {
-                  await getDownloadURL(snapshot.ref)
-                    .then(async (url) => {
-                      const valueArsipFiles = {
-                        arsip_id: resultArsip.data.id_arsip,
-                        file_upload: fileName,
-                      };
-
-                      const resultArsipFiles = await fetch(
-                        "../api/arsip-files/create",
-                        {
-                          method: "POST",
-                          body: JSON.stringify(valueArsipFiles),
-                        },
-                      );
-                      const responseResult = await resultArsipFiles.json();
-
-                      if (resultArsipFiles.status === 201) {
-                        const valueFirebase = {
-                          arsip_files_id: responseResult.data.id,
-                          link: url,
-                        };
-
-                        const resultFirebase = await fetch(
-                          "../api/firebase/create",
-                          {
-                            method: "POST",
-                            body: JSON.stringify(valueFirebase),
-                          },
-                        );
-
-                        if (resultFirebase.status === 201) {
-                          resultStatus.push(true);
-                        } else {
-                          resultStatus.push(false);
-                        }
-                      } else {
-                        dispatch(
-                          setAlertMessage({
-                            status: false,
-                            message: "Data user gagal disimpan",
-                          }),
-                        );
-                        setIsSaveLoading(false);
-                      }
-                    })
-                    .catch(() => {
-                      dispatch(
-                        setAlertMessage({
-                          status: false,
-                          message: "Data user gagal disimpan",
-                        }),
-                      );
-                      setIsSaveLoading(false);
-                    });
-                })
-                .catch(() => {
-                  dispatch(
-                    setAlertMessage({
-                      status: false,
-                      message: "Data user gagal disimpan",
-                    }),
-                  );
-                  setIsSaveLoading(false);
-                });
-            }
-
-            if (result.status === 201 && resultStatus.length > 0) {
-              const errorHandler = resultStatus.filter(
-                (status: boolean) => status == false,
-              );
-
-              if (errorHandler.length == 0) {
-                dispatch(
-                  setAlertMessage({
-                    status: true,
-                    message: "Data arsip berhasil disimpan",
-                  }),
-                );
-                push("/arsip");
-              }
-            } else {
-              dispatch(
-                setAlertMessage({
-                  status: false,
-                  message: resultArsip.message || "Data arsip gagal disimpan",
-                }),
-              );
-              push("/arsip");
-            }
-          }
-        } else {
-          dispatch(
-            setAlertMessage({
-              status: true,
-              message: "Data arsip berhasil disimpan",
-            }),
+          const uploadResult = await fetch(
+            `/api/arsip-files/upload/${resultArsip.data.id_arsip}/${instansiId}`,
+            {
+              method: "PUT",
+              body: formData,
+            },
           );
-          await push("/arsip");
+          const uploadResultJson = await uploadResult.json().catch(() => null);
+
+          if (!uploadResult.ok) {
+            dispatch(
+              setAlertMessage({
+                status: false,
+                message:
+                  uploadResultJson?.message ||
+                  "Data arsip berhasil dibuat, tetapi file gagal diupload",
+              }),
+            );
+            await push("/arsip");
+            return;
+          }
         }
+
+        dispatch(
+          setAlertMessage({
+            status: true,
+            message: "Data arsip berhasil disimpan",
+          }),
+        );
+        await push("/arsip");
       } catch (error: any) {
         toast.error(error?.message || "Data arsip gagal disimpan", {
           position: "top-right",
@@ -744,39 +704,60 @@ const CreateArsip = () => {
                         activeDateDefault={formik.values.masaRetensi || null}
                         format="DD-MM-YYYY"
                         formikOnChange={(newValue: any) => {
-                          if (
-                            newValue &&
-                            typeof newValue.isValid === "function" &&
-                            newValue.isValid()
-                          ) {
+                          if (newValue) {
+                            const date = new Date(newValue);
+                            const valueDate = `${date.getFullYear()}-${
+                              date.getMonth() + 1
+                            }-${date.getDate()}`;
                             formik.setFieldValue(
                               "masaRetensi",
-                              formatMasaRetensiPayload(newValue.toDate()),
+                              formatMasaRetensiPayload(valueDate),
                             );
-                          } else if (newValue === null) {
+                          } else {
                             formik.setFieldValue("masaRetensi", "");
                           }
                         }}
                         isInvalid={!!formik.errors.masaRetensi}
                         errorMessage={formik.errors.masaRetensi}
-                        isPriority
                       />
                     </div>
                   </div>
                   {/* Row */}
                   <div className="flex flex-wrap mx-2 mb-0">
                     {/* Col */}
-                    <div className="mb-3 w-full flex-2 px-0 md:px-3">
+                    <div className="mb-4 w-full flex-2 px-0 md:px-3">
                       <MultipleFileInputComponent
                         label="Tambah File"
                         name="fileArsip"
                         onChange={(e: any) => {
                           const file = e.target.files;
                           if (file) {
+                            if (!hasOnlyAllowedFiles(file)) {
+                              toast.error(
+                                "File yang diizinkan hanya PDF, Word, Excel, dan gambar.",
+                                {
+                                  position: "top-right",
+                                  autoClose: 5000,
+                                  hideProgressBar: true,
+                                  closeOnClick: false,
+                                  pauseOnHover: true,
+                                  draggable: true,
+                                  progress: undefined,
+                                  theme: "light",
+                                },
+                              );
+                              formik.setFieldValue("fileArsip", undefined);
+                              e.target.value = "";
+                              return;
+                            }
                             formik.setFieldValue("fileArsip", file);
                           }
                         }}
+                        accept={ALLOWED_ARCHIVE_FILE_ACCEPT}
                       />
+                      <p className="text-sm text-gray-500">
+                        Maksimal ukuran file 1 GB.
+                      </p>
                     </div>
                   </div>
                   {/* Row */}
@@ -833,34 +814,8 @@ const CreateArsip = () => {
                             </li>
                             <li className="mt-1">
                               Ukuran file maksimal{" "}
-                              <span className="font-semibold">2 MB</span>.
+                              <span className="font-semibold">1 GB</span>.
                             </li>
-                            {/* <li>
-                              Jenis File yang boleh diupload:
-                              <br />
-                              <span className="font-semibold pl-5">TEXT</span>:
-                              txt, pdf, ppt, pptx, xls, xlsx, doc, docx.
-                              <br />
-                              <span className="font-semibold pl-5">AUDIO</span>:
-                              mp3, flac, wav, m4a.
-                              <br />
-                              <span className="font-semibold pl-5">VIDEO</span>:
-                              mp4, flv.
-                              <br />
-                              <span className="font-semibold pl-5">FOTO</span>:
-                              jpg, jpeg, png.
-                              <br />
-                              <span className="font-semibold pl-5">
-                                COMPRESSION
-                              </span>
-                              : zip, rar.
-                            </li>
-                            <li>
-                              Disarankan kalau filenya banyak, lebih baik buat
-                              dalam format{" "}
-                              <span className="font-semibold">zip</span> atau{" "}
-                              <span className="font-semibold">rar</span>
-                            </li> */}
                           </ul>
                         </div>
                       </div>

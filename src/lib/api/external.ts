@@ -234,7 +234,7 @@ export async function fetchExternalJson<T extends JsonValue = JsonValue>(
     throw new ExternalApiError(
       response.status,
       getPayloadMessage(data) ??
-      `External API request failed with status ${response.status}`,
+        `External API request failed with status ${response.status}`,
       data,
     );
   }
@@ -253,7 +253,7 @@ export async function fetchExternalJsonDirect<T extends JsonValue = JsonValue>(
     throw new ExternalApiError(
       response.status,
       getPayloadMessage(data) ??
-      `External API request failed with status ${response.status}`,
+        `External API request failed with status ${response.status}`,
       data,
     );
   }

@@ -210,7 +210,7 @@ const ReportArsip = () => {
       key: "all",
       title: "Arsip Keseluruhan",
       count: summary.all,
-      description: "Semua data arsip yang ada di sistem.",
+      description: "Semua data arsip tersimpan.",
       button: "Export",
     },
     {

@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getToken } from "next-auth/jwt";
 import {
   ExternalApiError,
   fetchExternalJson,
@@ -17,6 +18,16 @@ type UpstreamResponse = {
   message?: string;
   data?: any;
 };
+
+type ArsipListResponse = {
+  success?: boolean;
+  message?: string;
+  data?: any[];
+};
+
+const PRIVATE_STATUS_FILE = 1;
+const PUBLIC_STATUS_FILE = 2;
+const PRIVILEGED_USER_TYPES = [1, 2, 3, 5];
 
 const normalizeArsipFiles = (items: any[] = []) =>
   items.map((item: any, index: number) => ({
@@ -37,10 +48,34 @@ const normalizeArsipFiles = (items: any[] = []) =>
       item.name ??
       "",
 
-    link: item.link ?? item.FileURL ?? item.file_url ?? "",
+    link:
+      item.link ?? item.link_firebase ?? item.FileURL ?? item.file_url ?? "",
+
+    link_firebase:
+      item.link_firebase ?? item.link ?? item.FileURL ?? item.file_url ?? "",
+
     created_by: item.created_by ?? item.CreatedBy ?? "",
     created_at: item.created_at ?? item.CreatedAt ?? null,
   }));
+
+const getArsipId = (item: any) =>
+  item?.id_arsip ?? item?.id ?? item?.arsip_id ?? item?.ArsipID;
+
+const getStatusFileId = (item: any) =>
+  Number(item?.status_file ?? item?.status_file_id ?? PRIVATE_STATUS_FILE);
+
+const canAccessArsipFiles = (arsip: any, token: any) => {
+  const statusFileId = getStatusFileId(arsip);
+  const usertypeId = Number(token?.usertypeId);
+  const userId = Number(token?.id);
+  const ownerId = Number(arsip?.user_id ?? arsip?.id_users);
+
+  return (
+    statusFileId === PUBLIC_STATUS_FILE ||
+    PRIVILEGED_USER_TYPES.includes(usertypeId) ||
+    ownerId === userId
+  );
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -68,6 +103,38 @@ export default async function handler(
 
   try {
     res.setHeader("Cache-Control", "no-store");
+    const token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+    const { data: arsipResponse } = await fetchExternalJson<ArsipListResponse>(
+      req,
+      "/v1/auth/arsip",
+      { method: "GET" },
+    );
+    const arsip = (arsipResponse?.data ?? []).find(
+      (item: any) => String(getArsipId(item)) === String(id),
+    );
+
+    if (!arsip) {
+      res.status(404).json({
+        status: false,
+        statusCode: 404,
+        message: "Data not found",
+      });
+      return;
+    }
+
+    if (!canAccessArsipFiles(arsip, token)) {
+      res.status(200).json({
+        status: true,
+        statusCode: 200,
+        message: "File arsip private",
+        data: [],
+      });
+      return;
+    }
+
     const candidateEndpoints = [
       `/v1/auth/arsip-files/byarsip/${id}`,
       `/v1/arsip-files/byarsip/${id}`,
@@ -77,7 +144,6 @@ export default async function handler(
     let lastError: unknown;
 
     for (const endpoint of candidateEndpoints) {
-      console.log("ENDPOINT DICOBA:", endpoint);
       try {
         const result = await fetchExternalJson<UpstreamResponse>(
           req,
@@ -86,7 +152,6 @@ export default async function handler(
             method: "GET",
           },
         );
-        console.log("RESPONSE DARI BACKEND:", result);
         data = result.data;
         lastError = undefined;
         break;

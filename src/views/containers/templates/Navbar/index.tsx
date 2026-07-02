@@ -19,7 +19,7 @@ const Navbar = ({ title }: NavbarProps) => {
   const dispatch = useDispatch();
   const isToggled = useSelector((state: any) => state.sidebarToggle.data);
   const isToggledDropdownNavbar = useSelector(
-    (state: any) => state.dropdownNavbar.data
+    (state: any) => state.dropdownNavbar.data,
   );
   const dropdownRef = useRef(null);
 

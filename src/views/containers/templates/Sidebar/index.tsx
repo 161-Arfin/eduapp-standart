@@ -6,14 +6,10 @@ import { useSession } from "next-auth/react";
 import type { ReactNode } from "react";
 import { AiOutlineDashboard } from "react-icons/ai";
 import { FaRegEdit } from "react-icons/fa";
-import { FiArchive, FiBookmark, FiFileText, FiUsers } from "react-icons/fi";
-import { HiOutlineBuildingLibrary } from "react-icons/hi2";
-import { IoTrailSignOutline } from "react-icons/io5";
-import { LuInbox, LuNotebookText } from "react-icons/lu";
+import { FiArchive, FiBookmark, FiFileText } from "react-icons/fi";
 import { MdOutlineLockPerson } from "react-icons/md";
 import { RiBuilding4Line } from "react-icons/ri";
 import { TbUserEdit } from "react-icons/tb";
-import { TfiLocationPin } from "react-icons/tfi";
 import { useSelector } from "react-redux";
 
 type AppSession = {
@@ -36,12 +32,6 @@ const Sidebar = () => {
     TbBuilding: <RiBuilding4Line size={20} />,
     FaRegBookmark: <FiBookmark size={20} />,
     FaRegFileAlt: <FiFileText size={20} />,
-    GoInbox: <LuInbox size={20} />,
-    LuNotebookText: <LuNotebookText size={20} />,
-    IoTrailSignOutline: <IoTrailSignOutline size={20} />,
-    TfiLocationPin: <TfiLocationPin size={20} />,
-    HiOutlineBuildingLibrary: <HiOutlineBuildingLibrary size={20} />,
-    FiUsers: <FiUsers size={20} />,
     TbUserEdit: <TbUserEdit size={20} />,
     MdOutlineLockPerson: <MdOutlineLockPerson size={20} />,
   };
