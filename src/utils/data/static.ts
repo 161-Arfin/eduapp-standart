@@ -3,6 +3,39 @@ export const phoneRegExp =
 export const usernameRegExp = /^[a-zA-Z0-9]+$/;
 export const passwordRegExp = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
 
+export const menuFeatureItem = [
+  {
+    id: 1,
+    menuName: "Arsip",
+    menuController: "arsip",
+    menuFunction: "",
+    menuIcon: "GoArchive",
+    dataTarget: "collapseArsip",
+    isActive: true,
+    orderNo: 1,
+    submenu: [
+      {
+        id: 1,
+        submenuName: "Tambah Arsip",
+        submenuFunction: "create",
+        orderNo: 1,
+      },
+      {
+        id: 2,
+        submenuName: "Data Arsip",
+        submenuFunction: "",
+        orderNo: 2,
+      },
+      {
+        id: 3,
+        submenuName: "Recycle Bin",
+        submenuFunction: "recyclebin",
+        orderNo: 3,
+      },
+    ],
+  },
+];
+
 export const menuSettingItem = [
   {
     id: 1,
