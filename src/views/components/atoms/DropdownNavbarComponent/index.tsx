@@ -1,5 +1,4 @@
 import { setDropdownNavbar } from "@/lib/redux/actions/DropdownNavbarSlice";
-import { getPackageCapabilities } from "@/utils/packageCapabilities";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import React from "react";
@@ -10,12 +9,6 @@ import { useDispatch } from "react-redux";
 const DropdownNavbarComponent = React.forwardRef<HTMLDivElement, any>((props, ref) => {
   const dispatch = useDispatch();
   const { data }: any = useSession();
-  const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
-  const locationParts = [
-    data?.user?.instansiName,
-    packageCapabilities.canManageRetention ? data?.user?.cabangName : null,
-    packageCapabilities.canManageRetention ? data?.user?.divisiName : null,
-  ].filter((item) => item && String(item).trim() !== "");
 
   return (
     <div ref={ref} className="absolute z-30 block top-14 right-0 text-xs shadow-lg min-w-[280px] w-auto rounded-lg border-gray-300 border">
@@ -27,7 +20,7 @@ const DropdownNavbarComponent = React.forwardRef<HTMLDivElement, any>((props, re
           {data?.user.username} ({data?.user.usertypeName})
         </p>
         <p className="text-xs font-medium text-gray-500">
-          {locationParts.join(" | ")}
+          {data?.user?.instansiName}
         </p>
       </div>
       <div className="py-2 px-0 mt-0 text-gray-500 bg-white rounded-b-md">

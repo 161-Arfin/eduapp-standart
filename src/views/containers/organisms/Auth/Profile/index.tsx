@@ -1,6 +1,5 @@
 import CardContainerComponent from "@/views/components/atoms/CardContainerComponent";
 import SpinLoadingComponent from "@/views/components/atoms/SpinLoadingComponent";
-import { getPackageCapabilities } from "@/utils/packageCapabilities";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
@@ -14,7 +13,6 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dataUser, setDataUser] = useState<any>({});
   const { data }: any = useSession();
-  const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
 
   const getUser = async () => {
     if (data?.user.id != undefined) {
@@ -61,18 +59,6 @@ const Profile = () => {
     getUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.user]);
-
-  const profileLocation = [
-    dataUser.instansiName || dataUser.instansi_name || data?.user?.instansiName,
-    packageCapabilities.canManageRetention
-      ? dataUser.cabangName || dataUser.cabang_name || data?.user?.cabangName
-      : null,
-    packageCapabilities.canManageRetention
-      ? dataUser.divisiName || dataUser.divisi_name || data?.user?.divisiName
-      : null,
-  ]
-    .filter((item) => item && String(item).trim() !== "")
-    .join(" | ");
 
   const profileCompany =
     dataUser.instansiName ||
@@ -212,7 +198,7 @@ const Profile = () => {
                           className="text-sm text-gray-600 hover:text-gray-800"
                           href="#"
                         >
-                          {profileLocation || "-"}
+                          {profileCompany}
                         </a>
                       </li>
                     </ul>

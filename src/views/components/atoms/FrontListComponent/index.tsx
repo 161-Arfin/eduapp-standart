@@ -1,6 +1,4 @@
 import React from "react";
-import { useSession } from "next-auth/react";
-import { getPackageCapabilities } from "@/utils/packageCapabilities";
 
 type FrontListComponentProps = {
   item: any;
@@ -16,8 +14,6 @@ const FrontListComponent = ({
   handleDetail,
 }: FrontListComponentProps) => {
   const scrollRef = React.useRef(null);
-  const { data }: any = useSession();
-  const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
 
   return (
     <div
@@ -27,14 +23,6 @@ const FrontListComponent = ({
     >
       {/* <!-- Card --> */}
       {item?.map((row: any, index: number) => {
-        const locationParts = [
-          row.lokasi_name ? `Lokasi ${row.lokasi_name}` : null,
-          row.rak_name ? `Rak ${row.rak_name}` : null,
-          row.baris_name ? `Baris ${row.baris_name}` : null,
-          row.box_name ? `Box ${row.box_name}` : null,
-          row.map_name ? `Map ${row.map_name}` : null,
-        ].filter(Boolean);
-
         return (
           <div
             key={index}
@@ -65,34 +53,11 @@ const FrontListComponent = ({
                     {row.deskripsi_arsip}
                   </span>
                   <div className="flex flex-wrap items-center gap-x-1 gap-y-2 mt-4">
-                    {locationParts.length > 0 ? (
-                      <p className="mt-1 text-xs text-gray-500">
-                        {locationParts.join(" | ")}
-                      </p>
-                    ) : null}
                     {row.status_retensi || null}
                     {row.is_available}
                   </div>
                 </span>
               </span>
-
-              {packageCapabilities.canManageRetention && row.divisi_name ? (
-                <div>
-                  <span className="py-1.5 px-2.5 inline-flex items-center gap-x-1.5 text-xs text-gray-800 bg-gray-100 hover:text-cyan-700 rounded-lg focus:outline-hidden focus:text-cyan-700 max-w-52 uppercase">
-                    <svg
-                      className="shrink-0 size-4"
-                      xmlns="http://www.w3.org/2000/svg"
-                      height="20"
-                      width="20"
-                      viewBox="0 -960 960 960"
-                      fill="#1f2937"
-                    >
-                      <path d="M240-144v-600q0-29.7 21.15-50.85Q282.3-816 312-816h336q29.7 0 50.85 21.15Q720-773.7 720-744v600l-240-96-240 96Zm72-107 168-67 168 67v-493H312v493Zm0-493h336-336Z" />
-                    </svg>
-                    {row.divisi_name}
-                  </span>
-                </div>
-              ) : null}
             </div>
           </div>
         );

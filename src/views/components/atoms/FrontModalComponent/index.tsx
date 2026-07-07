@@ -1,13 +1,10 @@
-import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import FrontDetailComponent from "../FrontDetailComponent";
 import FrontListComponent from "../FrontListComponent";
 import { setShowModal } from "@/lib/redux/actions/ShowModalSlice";
 import SpinLoadingComponent from "../SpinLoadingComponent";
-import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
-import { getPackageCapabilities } from "@/utils/packageCapabilities";
 
 type FrontModalComponentProps = {
   title: string;
@@ -18,6 +15,9 @@ type FrontModalComponentProps = {
   isLoadingFetchMoreData?: boolean;
   totalData?: string;
   searchResultFrom?: string;
+  searchValue?: string;
+  onSearchValueChange?: (value: string) => void;
+  onSearchSubmit?: () => void;
 };
 
 const FrontModalComponent = ({
@@ -29,11 +29,11 @@ const FrontModalComponent = ({
   isLoadingFetchMoreData,
   totalData,
   searchResultFrom,
+  searchValue = "",
+  onSearchValueChange,
+  onSearchSubmit,
 }: FrontModalComponentProps) => {
   const dispatch = useDispatch();
-  const { data }: any = useSession();
-  const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
-  const isRegularPackage = packageCapabilities.key === "regular";
   const [currentChildren, setCurrentChildren] = useState("");
   const [rowDetail, setRowDetail] = useState({});
   const [fileIsLoading, setFileIsLoading] = useState(false);
@@ -90,6 +90,11 @@ const FrontModalComponent = ({
   const handleDetail = (row: any) => {
     setCurrentChildren("detailComponent");
     getFileArsip(row);
+  };
+
+  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onSearchSubmit?.();
   };
 
   useEffect(() => {
@@ -183,52 +188,71 @@ const FrontModalComponent = ({
                       Ada <span className="font-semibold">{totalData}</span>{" "}
                       data ditemukan dari pencarian arsip pada{" "}
                       <span className="font-semibold">
-                        {isRegularPackage
-                          ? "kata kunci yang dimasukkan"
-                          : data?.user.usertypeId == 5
-                            ? searchResultFrom == "getAll"
-                              ? "semua instansi"
-                              : `instansi ${searchResultFrom}`
-                            : data?.user.usertypeId == 1
-                              ? searchResultFrom == "getAll"
-                                ? "semua cabang"
-                                : `cabang ${searchResultFrom}`
-                              : data?.user.usertypeId == 2 ||
-                                  data?.user.usertypeId == 3 ||
-                                  data?.user.usertypeId == 4
-                                ? searchResultFrom == "getAll"
-                                  ? "semua divisi"
-                                  : `divisi ${searchResultFrom}`
-                                : ""}
+                        {searchResultFrom == "getAll"
+                          ? "semua instansi"
+                          : searchResultFrom || "kata kunci yang dimasukkan"}
                       </span>
                     </>
                   ) : (
                     <>
                       Tidak ada data dari pencarian arsip pada{" "}
                       <span className="font-semibold">
-                        {isRegularPackage
-                          ? "kata kunci yang dimasukkan"
-                          : data?.user.usertypeId == 5
-                            ? searchResultFrom == "getAll"
-                              ? "semua instansi"
-                              : `instansi ${searchResultFrom}`
-                            : data?.user.usertypeId == 1
-                              ? searchResultFrom == "getAll"
-                                ? "semua cabang"
-                                : `cabang ${searchResultFrom}`
-                              : data?.user.usertypeId == 2 ||
-                                  data?.user.usertypeId == 3 ||
-                                  data?.user.usertypeId == 4
-                                ? searchResultFrom == "getAll"
-                                  ? "semua divisi"
-                                  : `divisi ${searchResultFrom}`
-                                : ""}
+                        {searchResultFrom == "getAll"
+                          ? "semua instansi"
+                          : searchResultFrom || "kata kunci yang dimasukkan"}
                       </span>
                     </>
                   )}
                 </p>
               ) : null}
             </div>
+
+            {currentChildren == "listComponent" ? (
+              <form
+                className="mb-5"
+                onSubmit={(event) => handleSearchSubmit(event)}
+              >
+                <div className="flex gap-x-3 p-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+                  <div className="w-full">
+                    <label htmlFor="modal-search-arsip" className="sr-only">
+                      Cari arsip
+                    </label>
+                    <input
+                      id="modal-search-arsip"
+                      type="text"
+                      className="py-2.5 px-3 block w-full border-transparent rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Cari arsip lain"
+                      value={searchValue ?? ""}
+                      onChange={(event) =>
+                        onSearchValueChange?.(event.target.value)
+                      }
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="size-10 inline-flex justify-center items-center rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                    disabled={isLoading}
+                    aria-label="Cari arsip"
+                  >
+                    <svg
+                      className="shrink-0 size-5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.3-4.3" />
+                    </svg>
+                  </button>
+                </div>
+              </form>
+            ) : null}
 
             {/* Untuk tampilan detail */}
             {currentChildren == "detailComponent" ? (

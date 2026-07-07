@@ -23,12 +23,12 @@ import RadioComponent from "@/views/components/atoms/RadioComponent";
 import { keteranganOptions, statusAksesOptions } from "@/utils/data/static";
 import PreviewFileComponent from "@/views/components/atoms/PreviewFileComponent";
 import { storage } from "@/lib/firebase/init";
-import { getPackageCapabilities } from "@/utils/packageCapabilities";
 import {
   getAdditionalArsipPayload,
   getDefaultStatusFileByPackage,
   getKeteranganMeta,
 } from "@/utils/arsip";
+import { getPackageCapabilities } from "@/utils/packageCapabilities";
 import {
   deleteObject,
   getDownloadURL,
@@ -110,7 +110,45 @@ type AdvancedArsipPayload = BaseArsipPayload & {
   status_retensi: boolean;
 };
 
-const MAX_PDF_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+const ALLOWED_ARCHIVE_FILE_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".bmp",
+];
+
+const ALLOWED_ARCHIVE_FILE_ACCEPT = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".bmp",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/bmp",
+].join(",");
+
+const MAX_ARCHIVE_FILE_SIZE_BYTES = 1024 * 1024 * 1024;
 
 const TableArsip = () => {
   const { data }: any = useSession();
@@ -124,9 +162,6 @@ const TableArsip = () => {
   // Paket paling rendah: usertypeId = 3 (CRUD arsip basic).
   // Endpoint `/api/arsip/:usertypeId` dan `/api/jenis-arsip/:usertypeId` tidak tersedia â†’ jangan dipanggil.
   const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
-  const isPdfOnlyPackage = packageCapabilities.uploadMode === "pdf-only";
-  const isRegularUser =
-    data?.user?.usertypeId == 3 || data?.user?.usertypeId == 4;
   const [isSaveLoading, setIsSaveLoading] = useState(false);
   const [schemaValidationInstansi, setSchemaValidationInstansi] =
     useState<any>();
@@ -163,11 +198,16 @@ const TableArsip = () => {
     };
   }
 
-  const hasOnlyPdfFiles = (files: FileList | File[]) =>
-    Array.from(files).every((file) => file.name.toLowerCase().endsWith(".pdf"));
+  const hasOnlyAllowedFiles = (files: FileList | File[]) =>
+    Array.from(files).every((file) => {
+      const fileName = file.name.toLowerCase();
+      return ALLOWED_ARCHIVE_FILE_EXTENSIONS.some((extension) =>
+        fileName.endsWith(extension),
+      );
+    });
 
-  const hasValidPdfFileSize = (files: FileList | File[]) =>
-    Array.from(files).every((file) => file.size <= MAX_PDF_FILE_SIZE_BYTES);
+  const hasValidArchiveFileSize = (files: FileList | File[]) =>
+    Array.from(files).every((file) => file.size <= MAX_ARCHIVE_FILE_SIZE_BYTES);
 
   const hasSelectedValue = (value: unknown) =>
     value !== undefined &&
@@ -240,7 +280,7 @@ const TableArsip = () => {
     { id: "arsip_name", label: "Nama Arsip", minWidth: 150 },
     { id: "status_file", label: "Status Akses", minWidth: 100 },
     { id: "status_retensi", label: "Status Retensi", minWidth: 100 },
-    { id: "masa_retensi", label: "Masa Retensi", minWidth: 100 },
+    // { id: "masa_retensi", label: "Masa Retensi", minWidth: 100 },
     { id: "keterangan", label: "Keterangan", minWidth: 100 },
     {
       id: "action",
@@ -337,7 +377,7 @@ const TableArsip = () => {
       </span>
     ) : (
       <span className="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-        Publis
+        Public
       </span>
     );
 
@@ -553,32 +593,32 @@ const TableArsip = () => {
     onSubmit: async (values: any) => {
       setIsSaveLoading(true);
 
-      if (
-        isPdfOnlyPackage &&
-        values.fileArsip &&
-        !hasOnlyPdfFiles(values.fileArsip)
-      ) {
-        dispatch(
-          setAlertMessage({
-            status: false,
-            message: "Pada paket regular, file yang diizinkan hanya PDF.",
-          }),
-        );
+      if (values.fileArsip && !hasOnlyAllowedFiles(values.fileArsip)) {
+        toast.error("File yang diizinkan hanya PDF, Word, Excel dan Gambar.", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
         setIsSaveLoading(false);
         return;
       }
 
-      if (
-        isPdfOnlyPackage &&
-        values.fileArsip &&
-        !hasValidPdfFileSize(values.fileArsip)
-      ) {
-        dispatch(
-          setAlertMessage({
-            status: false,
-            message: "Ukuran file PDF maksimal 2 MB per file.",
-          }),
-        );
+      if (values.fileArsip && !hasValidArchiveFileSize(values.fileArsip)) {
+        toast.error("Ukuran file maksimal 1 GB.", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: true,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
         setIsSaveLoading(false);
         return;
       }
@@ -638,25 +678,104 @@ const TableArsip = () => {
         const filesCount = values.fileArsip.length;
 
         if (filesCount > 0) {
-          if (isPdfOnlyPackage) {
-            const formData = new FormData();
+          const instansiName = resolveInstansiName(instansiId, values.id);
+          let resultStatus: any = [];
+          for (let i = 0; i < filesCount; i++) {
+            const fileName =
+              "(" +
+              new Date().getDate() +
+              "-" +
+              (new Date().getMonth() + 1) +
+              "-" +
+              new Date().getFullYear() +
+              " " +
+              new Date().getHours() +
+              ":" +
+              new Date().getMinutes() +
+              ":" +
+              new Date().getSeconds() +
+              ") " +
+              values.fileArsip[i].name;
 
-            Array.from(values.fileArsip as FileList | File[]).forEach(
-              (file) => {
-                formData.append("files", file);
-              },
+            const imageRef = await ref(
+              storage,
+              `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
             );
 
-            const uploadResult = await fetch(
-              `../api/arsip-files/upload/${values.id}/${instansiId}`,
-              {
-                method: "PUT",
-                body: formData,
-              },
-            );
-            const uploadResultJson = await uploadResult.json();
+            await uploadBytes(imageRef, values.fileArsip[i])
+              .then(async (snapshot) => {
+                await getDownloadURL(snapshot.ref)
+                  .then(async (url) => {
+                    const valueArsipFiles = {
+                      arsip_id: values.id,
+                      file_upload: fileName,
+                    };
 
-            if (resultUpdateArsip.status === 200 && uploadResult.ok) {
+                    const resultArsipFiles = await fetch(
+                      "../api/arsip-files/create",
+                      {
+                        method: "POST",
+                        body: JSON.stringify(valueArsipFiles),
+                      },
+                    );
+                    const responseResult = await resultArsipFiles.json();
+
+                    if (resultArsipFiles.status === 201) {
+                      const valueFirebase = {
+                        arsip_files_id: responseResult.data.id,
+                        link: url,
+                      };
+
+                      const resultFirebase = await fetch(
+                        "../api/firebase/create",
+                        {
+                          method: "POST",
+                          body: JSON.stringify(valueFirebase),
+                        },
+                      );
+
+                      if (resultFirebase.status === 201) {
+                        resultStatus.push(true);
+                      } else {
+                        resultStatus.push(false);
+                      }
+                    } else {
+                      dispatch(
+                        setAlertMessage({
+                          status: false,
+                          message: "Data user gagal disimpan",
+                        }),
+                      );
+                      setIsSaveLoading(false);
+                    }
+                  })
+                  .catch(() => {
+                    dispatch(
+                      setAlertMessage({
+                        status: false,
+                        message: "Data user gagal disimpan",
+                      }),
+                    );
+                    setIsSaveLoading(false);
+                  });
+              })
+              .catch(() => {
+                dispatch(
+                  setAlertMessage({
+                    status: false,
+                    message: "Data user gagal disimpan",
+                  }),
+                );
+                setIsSaveLoading(false);
+              });
+          }
+
+          if (resultUpdateArsip.status === 200 && resultStatus.length > 0) {
+            const errorHandler = resultStatus.filter(
+              (status: boolean) => status == false,
+            );
+
+            if (errorHandler.length == 0) {
               toast.success("Data arsip berhasil disimpan", {
                 position: "top-right",
                 autoClose: 5000,
@@ -671,153 +790,22 @@ const TableArsip = () => {
               dispatch(setShowModal({ editArsipModal: false }));
               setIsSaveLoading(false);
               getData();
-            } else {
-              toast.error(
-                uploadResultJson.message ||
-                  "Data arsip berhasil diperbarui, tetapi file PDF gagal diupload",
-                {
-                  position: "top-right",
-                  autoClose: 5000,
-                  hideProgressBar: true,
-                  closeOnClick: false,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  theme: "light",
-                },
-              );
-              setIsSaveLoading(false);
             }
           } else {
-            const instansiName = resolveInstansiName(instansiId, values.id);
-            let resultStatus: any = [];
-            for (let i = 0; i < filesCount; i++) {
-              const fileName =
-                "(" +
-                new Date().getDate() +
-                "-" +
-                (new Date().getMonth() + 1) +
-                "-" +
-                new Date().getFullYear() +
-                " " +
-                new Date().getHours() +
-                ":" +
-                new Date().getMinutes() +
-                ":" +
-                new Date().getSeconds() +
-                ") " +
-                values.fileArsip[i].name;
-
-              const imageRef = await ref(
-                storage,
-                `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
-              );
-
-              await uploadBytes(imageRef, values.fileArsip[i])
-                .then(async (snapshot) => {
-                  await getDownloadURL(snapshot.ref)
-                    .then(async (url) => {
-                      const valueArsipFiles = {
-                        arsip_id: values.id,
-                        file_upload: fileName,
-                      };
-
-                      const resultArsipFiles = await fetch(
-                        "../api/arsip-files/create",
-                        {
-                          method: "POST",
-                          body: JSON.stringify(valueArsipFiles),
-                        },
-                      );
-                      const responseResult = await resultArsipFiles.json();
-
-                      if (resultArsipFiles.status === 201) {
-                        const valueFirebase = {
-                          arsip_files_id: responseResult.data.id,
-                          link: url,
-                        };
-
-                        const resultFirebase = await fetch(
-                          "../api/firebase/create",
-                          {
-                            method: "POST",
-                            body: JSON.stringify(valueFirebase),
-                          },
-                        );
-
-                        if (resultFirebase.status === 201) {
-                          resultStatus.push(true);
-                        } else {
-                          resultStatus.push(false);
-                        }
-                      } else {
-                        dispatch(
-                          setAlertMessage({
-                            status: false,
-                            message: "Data user gagal disimpan",
-                          }),
-                        );
-                        setIsSaveLoading(false);
-                      }
-                    })
-                    .catch(() => {
-                      dispatch(
-                        setAlertMessage({
-                          status: false,
-                          message: "Data user gagal disimpan",
-                        }),
-                      );
-                      setIsSaveLoading(false);
-                    });
-                })
-                .catch(() => {
-                  dispatch(
-                    setAlertMessage({
-                      status: false,
-                      message: "Data user gagal disimpan",
-                    }),
-                  );
-                  setIsSaveLoading(false);
-                });
-            }
-
-            if (resultUpdateArsip.status === 200 && resultStatus.length > 0) {
-              const errorHandler = resultStatus.filter(
-                (status: boolean) => status == false,
-              );
-
-              if (errorHandler.length == 0) {
-                toast.success("Data arsip berhasil disimpan", {
-                  position: "top-right",
-                  autoClose: 5000,
-                  hideProgressBar: true,
-                  closeOnClick: false,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  theme: "light",
-                });
-                handleReset();
-                dispatch(setShowModal({ editArsipModal: false }));
-                setIsSaveLoading(false);
-                getData();
-              }
-            } else {
-              toast.error(
-                resultUpdateArsipJson?.message || "Data arsip gagal disimpan",
-                {
-                  position: "top-right",
-                  autoClose: 5000,
-                  hideProgressBar: true,
-                  closeOnClick: false,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  theme: "light",
-                },
-              );
-              setIsSaveLoading(false);
-            }
+            toast.error(
+              resultUpdateArsipJson?.message || "Data arsip gagal disimpan",
+              {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: true,
+                closeOnClick: false,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                theme: "light",
+              },
+            );
+            setIsSaveLoading(false);
           }
         }
       } else {
@@ -857,14 +845,6 @@ const TableArsip = () => {
   });
 
   useEffect(() => {
-    if (
-      isRegularUser &&
-      data?.user?.id &&
-      formik.values.userId !== String(data.user.id)
-    ) {
-      formik.setFieldValue("userId", String(data.user.id), false);
-    }
-
     const defaultStatusFile = getDefaultStatusFileByPackage(
       packageCapabilities.canConfigureFileAccess,
     );
@@ -876,11 +856,7 @@ const TableArsip = () => {
       formik.setFieldValue("statusFile", String(defaultStatusFile), false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isRegularUser,
-    data?.user?.id,
-    packageCapabilities.canConfigureFileAccess,
-  ]);
+  }, [packageCapabilities.canConfigureFileAccess]);
 
   // Get data for arsip table
   const getData = async () => {
@@ -897,7 +873,6 @@ const TableArsip = () => {
             cache: "no-store",
           },
         );
-        console.log("Response status:", response);
 
         // Paket rendah: endpoint /api/arsip/... bisa tidak ada (404) â†’ jangan popup
         if (!response.ok) {
@@ -1255,7 +1230,6 @@ const TableArsip = () => {
         cache: "no-store",
       });
       const responseJson = await response.json();
-      console.log("Response FILE:", responseJson);
 
       if (responseJson.status === false) {
         toast.error("Internal server error", {
@@ -1273,10 +1247,8 @@ const TableArsip = () => {
       }
 
       if (Array.isArray(responseJson.data) && responseJson.data.length > 0) {
-        console.log("Response FILE DATA:", responseJson.data);
         setDetailFileRows(responseJson.data);
       } else {
-        console.log("Response FILE DATA EMPTY:", responseJson.data);
         setDetailFileRows([]);
       }
     } catch (e: any) {
@@ -1312,7 +1284,6 @@ const TableArsip = () => {
       : [];
     await getFileArsipByArsipId(id);
 
-    // Lokasi belum muncul di dropdown edit arsip
     if (filterResult.length > 0) {
       formik.setValues({
         id: filterResult[0].id,
@@ -1348,11 +1319,9 @@ const TableArsip = () => {
     if (data?.user.usertypeId == 5) {
       getDataInstansi();
     }
-    if (!isRegularUser) {
-      getDataOwnerUser();
-    }
+    getDataOwnerUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.user, isRegularUser]);
+  }, [data?.user]);
 
   // Handle Delete
   const handleDelete = async (id: any) => {
@@ -1697,7 +1666,6 @@ const TableArsip = () => {
           });
           setRows([]);
         }
-        console.log(resultJson);
         if (resultJson.data.length > 0 && resultJson.cursor != 0) {
           const result = resultJson.data.map((data: any) => {
             // Status peminjaman
@@ -2149,25 +2117,7 @@ const TableArsip = () => {
             </div>
           </div>
           {/* Row */}
-          {packageCapabilities.canManageClassification ? (
-            <div className="flex flex-wrap mx-2 mb-0">
-              {/* Col */}
-              <div className="mb-3 w-full flex-2 px-0 md:px-3">
-                <MultipleCheckboxComponent
-                  label="Jenis Arsip"
-                  options={jenisArsip}
-                  defaultValue={arsipJenisIdSelected}
-                  formikOnChange={(e: any) =>
-                    formik.setFieldValue("jenisArsipId", e)
-                  }
-                  lengthCheckboxOptions="md:grid-cols-5"
-                />
-              </div>
-            </div>
-          ) : null}
-          {/* Row */}
           <div className="flex flex-wrap mx-2 mb-0">
-            {/* Col */}
             <div className="mb-3 w-full flex-2 px-0 md:px-3">
               <DatepickerComponent
                 label="Masa Retensi"
@@ -2190,55 +2140,67 @@ const TableArsip = () => {
               />
             </div>
           </div>
-          {/* Row */}
-          <div className="flex flex-wrap mx-2 mb-0">
-            {/* view current file */}
-            <div className="mb-3 w-full flex-2 px-0 md:px-3">
-              <PreviewFileComponent label="File Saat Ini" data={fileArsip} />
-            </div>
-          </div>
+
           {/* Row */}
           <div className="flex flex-wrap mx-2 mb-0">
             {/* Col */}
             <div className="mb-3 w-full flex-2 px-0 md:px-3">
+              {fileArsip.length > 0 ? (
+                <div className="flex flex-wrap mb-0">
+                  <div className="mb-3 w-full flex-2">
+                    <PreviewFileComponent
+                      label="File Saat Ini"
+                      data={fileArsip}
+                    />
+                  </div>
+                </div>
+              ) : null}
               <MultipleFileInputComponent
                 label="Tambah File"
                 name="fileArsip"
                 onChange={(e: any) => {
                   const file = e.target.files;
                   if (file) {
-                    if (isPdfOnlyPackage && !hasOnlyPdfFiles(file)) {
-                      dispatch(
-                        setAlertMessage({
-                          status: false,
-                          message:
-                            "Pada paket regular, file yang diizinkan hanya PDF.",
-                        }),
+                    if (!hasOnlyAllowedFiles(file)) {
+                      toast.error(
+                        "File yang diizinkan hanya PDF, Word, Excel dan Gambar.",
+                        {
+                          position: "top-right",
+                          autoClose: 5000,
+                          hideProgressBar: true,
+                          closeOnClick: false,
+                          pauseOnHover: true,
+                          draggable: true,
+                          progress: undefined,
+                          theme: "light",
+                        },
                       );
-                      handleReset();
+                      formik.setFieldValue("fileArsip", undefined);
+                      e.target.value = "";
                       return;
                     }
-                    if (isPdfOnlyPackage && !hasValidPdfFileSize(file)) {
-                      dispatch(
-                        setAlertMessage({
-                          status: false,
-                          message: "Ukuran file PDF maksimal 2 MB per file.",
-                        }),
-                      );
-                      handleReset();
+                    if (!hasValidArchiveFileSize(file)) {
+                      toast.error("Ukuran maksimal 1 GB per file.", {
+                        position: "top-right",
+                        autoClose: 5000,
+                        hideProgressBar: true,
+                        closeOnClick: false,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        theme: "light",
+                      });
+                      formik.setFieldValue("fileArsip", undefined);
+                      e.target.value = "";
                       return;
                     }
                     formik.setFieldValue("fileArsip", file);
                   }
                 }}
                 fileInputRef={fileInputRef}
-                accept={isPdfOnlyPackage ? ".pdf,application/pdf" : undefined}
+                accept={ALLOWED_ARCHIVE_FILE_ACCEPT}
               />
-              {isPdfOnlyPackage ? (
-                <p className="mt-2 text-sm text-gray-500">
-                  Maksimal ukuran file PDF 2 MB per file.
-                </p>
-              ) : null}
+              <p className="text-sm text-gray-500">Maksimal ukuran file 1 GB</p>
             </div>
           </div>
           {/* Row */}
@@ -2280,51 +2242,20 @@ const TableArsip = () => {
             {/* Col */}
             <div className="mb-3 w-full md:w-full flex-2 px-0 md:px-3">
               <div>
-                <h2 className="text-base font-bold text-gray-500 dark:text-neutral-200">
-                  Catatan :
-                </h2>
-                <div className="mt-1 text-sm text-gray-500 dark:text-neutral-400">
+                <h2 className="text-base font-bold text-gray-500">Catatan :</h2>
+                <div className="mt-1 text-sm text-gray-500">
                   <ul className="list-disc list-inside">
-                    {isPdfOnlyPackage ? (
-                      <li>
-                        Jenis file yang boleh diupload:{" "}
-                        <span className="font-semibold">PDF</span>.
-                      </li>
-                    ) : null}
-                    {isPdfOnlyPackage ? (
-                      <li>
-                        Ukuran file PDF maksimal{" "}
-                        <span className="font-semibold">2 MB</span> per file.
-                      </li>
-                    ) : (
-                      <>
-                        <li>
-                          Jenis File yang boleh diupload:
-                          <br />
-                          <span className="font-semibold pl-5">TEXT</span>: txt,
-                          pdf, ppt, pptx, xls, xlsx, doc, docx.
-                          <br />
-                          <span className="font-semibold pl-5">AUDIO</span>:
-                          mp3, flac, wav, m4a.
-                          <br />
-                          <span className="font-semibold pl-5">VIDEO</span>:
-                          mp4, flv.
-                          <br />
-                          <span className="font-semibold pl-5">FOTO</span>: jpg,
-                          jpeg, png.
-                          <br />
-                          <span className="font-semibold pl-5">
-                            COMPRESSION
-                          </span>
-                          : zip, rar.
-                        </li>
-                        <li>
-                          Disarankan kalau filenya banyak, lebih baik buat dalam
-                          format <span className="font-semibold">zip</span> atau{" "}
-                          <span className="font-semibold">rar</span>
-                        </li>
-                      </>
-                    )}
+                    <li>
+                      Jenis File yang bisa di upload:
+                      <br />
+                      <span className="font-semibold pl-5">
+                        PDF, Word, Excel dan Gambar
+                      </span>
+                    </li>
+                    <li className="mt-1">
+                      Ukuran file maksimal{" "}
+                      <span className="font-semibold">1 GB</span>.
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -2359,13 +2290,13 @@ const TableArsip = () => {
             </tr>
           ) : (
             <tr>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800 dark:text-neutral-200 w-10 align-top">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800 w-10 align-top">
                 File
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200 w-2 align-top">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 w-2 align-top">
                 :
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-neutral-200 align-top">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 align-top">
                 {detailFileRows.map((data: any, index: number) => (
                   <div className="mb-3" key={index}>
                     {data.file_upload}{" "}

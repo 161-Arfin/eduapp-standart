@@ -3,25 +3,28 @@ import React from "react";
 type PreviewFileComponentProps = {
   label: string;
   data: any;
+  onDownload?: (item: any) => void;
 };
 
-const PreviewFileComponent = ({ label, data }: PreviewFileComponentProps) => {
+const PreviewFileComponent = ({
+  label,
+  data,
+  onDownload,
+}: PreviewFileComponentProps) => {
   const dataFile = Array.isArray(data) ? data : [];
 
   return (
     <>
-      <label className="block text-sm font-medium mb-2 dark:text-white">
-        {label}
-      </label>
+      <label className="block text-sm font-medium mb-2">{label}</label>
       <div className="max-w-full grid md:grid-cols-2 gap-3">
         {dataFile?.map((item: any) => (
           <div
             key={item.id}
-            className="p-2 pl-3 bg-white border border-solid border-gray-300 rounded-xl dark:bg-neutral-800 dark:border-neutral-600"
+            className="p-2 pl-3 bg-white border border-solid border-gray-300 rounded-xl"
           >
             <div className="mb-0 flex justify-between items-center">
               <div className="flex items-center gap-x-3">
-                <span className="size-8 flex justify-center items-center border border-gray-200 text-gray-500 rounded-lg dark:border-neutral-700 dark:text-neutral-500 p-0.5">
+                <span className="size-8 flex justify-center items-center border border-gray-200 text-gray-500 rounded-lg">
                   {/* Icon file */}
                   <svg
                     width="800px"
@@ -37,21 +40,20 @@ const PreviewFileComponent = ({ label, data }: PreviewFileComponentProps) => {
                   </svg>
                 </span>
                 <div>
-                  <p className="text-sm font-medium text-gray-800 dark:text-white">
+                  <p className="text-sm font-medium text-gray-800">
                     <span className="inline-block max-w-75 align-bottom">
                       {item.file_upload}
                     </span>
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-neutral-500">
-                    by {item.created_by}
-                  </p>
+                  <p className="text-xs text-gray-500">by {item.created_by}</p>
                 </div>
               </div>
               <div className="flex items-center gap-x-2">
                 <a
                   href={item.link_firebase}
                   target="_blank"
-                  className="text-blue-500 hover:text-blue-600 focus:outline-hidden dark:text-neutral-500 dark:hover:text-neutral-200"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-600 focus:outline-hidden"
                 >
                   <svg
                     className="shrink-0 size-4"
@@ -72,14 +74,14 @@ const PreviewFileComponent = ({ label, data }: PreviewFileComponentProps) => {
                     />
                     <path
                       d="M12 16V4M19 17v.6c0 1.33-1.07 2.4-2.4 2.4H7.4C6.07 20 5 18.93 5 17.6V17"
-                      stroke-miterlimit="10"
+                      strokeMiterlimit="10"
                       strokeLinecap="round"
                     />
                   </svg>
                 </a>
                 <button
                   type="button"
-                  className="text-red-400 hover:text-red-600 focus:outline-hidden dark:text-red-400 dark:hover:text-red-600"
+                  className="text-red-400 hover:text-red-600 focus:outline-hidden"
                   onClick={() => item.action(item.id)}
                 >
                   <svg
@@ -111,4 +113,3 @@ const PreviewFileComponent = ({ label, data }: PreviewFileComponentProps) => {
 };
 
 export default PreviewFileComponent;
-

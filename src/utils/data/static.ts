@@ -39,23 +39,23 @@ export const menuFeatureItem = [
 export const menuSettingItem = [
   {
     id: 1,
-    menuName: "User Management",
-    menuController: "user",
-    menuFunction: "#",
-    menuIcon: "FiUsers",
-    dataTarget: "collapseUser",
+    menuName: "Arsip",
+    menuController: "arsip",
+    menuFunction: "",
+    menuIcon: "GoArchive",
+    dataTarget: "collapseArsip",
     isActive: true,
     orderNo: 1,
     submenu: [
       {
         id: 1,
-        submenuName: "Tambah User",
+        submenuName: "Tambah Arsip",
         submenuFunction: "create",
         orderNo: 1,
       },
       {
         id: 2,
-        submenuName: "Data User",
+        submenuName: "Data Arsip",
         submenuFunction: "",
         orderNo: 2,
       },
@@ -69,52 +69,39 @@ export const menuSettingItem = [
   },
   {
     id: 2,
+    menuName: "Laporan",
+    menuController: "report",
+    menuFunction: "",
+    menuIcon: "FaRegFileAlt",
+    dataTarget: "collapseLaporan",
+    isActive: true,
+    orderNo: 2,
+    submenu: [],
+  },
+];
+
+export const menuSettingItem = [
+  {
+    id: 1,
     menuName: "Edit Profile",
     menuController: "update-profile",
     menuFunction: "",
     menuIcon: "TbUserEdit",
     dataTarget: "collapseUpdateProfile",
     isActive: true,
-    orderNo: 2,
+    orderNo: 1,
     submenu: [],
   },
   {
-    id: 3,
+    id: 2,
     menuName: "Ubah Password",
     menuController: "auth",
     menuFunction: "change-password",
     menuIcon: "MdOutlineLockPerson",
     dataTarget: "collapseChangePassword",
     isActive: true,
-    orderNo: 3,
+    orderNo: 2,
     submenu: [],
-  },
-];
-
-export const counterDataDashboard = [
-  {
-    id: 1,
-    title: "Pengiriman Paket",
-    icon: "sendingBox",
-    value: 297,
-  },
-  {
-    id: 2,
-    title: "Penerimaan Paket",
-    icon: "receivingBox",
-    value: 136,
-  },
-  {
-    id: 3,
-    title: "Agent",
-    icon: "agent",
-    value: 97,
-  },
-  {
-    id: 4,
-    title: "Cabang",
-    icon: "unit",
-    value: 37,
   },
 ];
 
@@ -187,39 +174,6 @@ export const dashboardCounter = [
     ],
   },
   // {
-  //   id: 2,
-  //   counter: [
-  //     {
-  //       id: 1,
-  //       title: "Rak",
-  //       icon: "TbBuilding",
-  //       value: 0,
-  //       width: "lg:w-1/4 md:w-1/2",
-  //     },
-  //     {
-  //       id: 2,
-  //       title: "Baris",
-  //       icon: "database",
-  //       value: 0,
-  //       width: "lg:w-1/4 md:w-1/2",
-  //     },
-  //     {
-  //       id: 3,
-  //       title: "Box",
-  //       icon: "GoInbox",
-  //       value: 0,
-  //       width: "lg:w-1/4 md:w-1/2",
-  //     },
-  //     {
-  //       id: 4,
-  //       title: "Map",
-  //       icon: "LuNotebookText",
-  //       value: 0,
-  //       width: "lg:w-1/4 md:w-1/2",
-  //     },
-  //   ],
-  // },
-  // {
   //   id: 3,
   //   counter: [
   //     {
@@ -236,20 +190,6 @@ export const dashboardCounter = [
   //       value: 0,
   //       width: "lg:w-1/4 md:w-1/2",
   //     },
-  //     {
-  //       id: 3,
-  //       title: "User",
-  //       icon: "FiUsers",
-  //       value: 0,
-  //       width: "lg:w-1/4 md:w-1/2",
-  //     },
-  //     {
-  //       id: 4,
-  //       title: "Level User",
-  //       icon: "TbUserShield",
-  //       value: 0,
-  //       width: "lg:w-1/4 md:w-1/2",
-  //     },
   //   ],
   // },
 ];
@@ -261,7 +201,7 @@ export const statusAksesOptions = [
   },
   {
     id: 2,
-    label: "Publis",
+    label: "Public",
   },
 ];
 

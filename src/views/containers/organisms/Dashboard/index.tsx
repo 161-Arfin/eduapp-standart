@@ -1,26 +1,8 @@
-import CardDashboardComponent from "@/views/components/atoms/CardDashboardComponent";
 import SpinLoadingComponent from "@/views/components/atoms/SpinLoadingComponent";
-import Image from "next/image";
 import React, { useState } from "react";
-import { AiFillDatabase } from "react-icons/ai";
 import { CiCircleAlert } from "react-icons/ci";
-import { FaRegEdit, FaRegUserCircle } from "react-icons/fa";
-import { ToastContainer, toast } from "react-toastify";
-import heroImage from "../../../../../public/assets/images/landscape-logo.png";
-import {
-  FiArchive,
-  FiBookmark,
-  FiCheckCircle,
-  FiFileText,
-  FiUsers,
-  FiXCircle,
-} from "react-icons/fi";
-import { RiBuilding4Line } from "react-icons/ri";
-import { LuInbox, LuNotebookText } from "react-icons/lu";
-import { IoTrailSignOutline } from "react-icons/io5";
-import { TfiLocationPin, TfiMenuAlt } from "react-icons/tfi";
-import { HiOutlineBuildingLibrary } from "react-icons/hi2";
-import { TbUserShield } from "react-icons/tb";
+import { ToastContainer } from "react-toastify";
+import { FiArchive, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import CounterDashboard from "@/views/components/molecules/CounterDashboard";
 import { useSession } from "next-auth/react";
 
@@ -29,26 +11,11 @@ const DashboardContent = () => {
   const { data } = useSession();
 
   const icon: any = {
-    database: <AiFillDatabase className="text-[#00a65a] font-black text-3xl" />,
-    FaRegEdit: <FaRegEdit className="text-blue-600 font-black text-3xl" />,
     FiArchive: <FiArchive className="text-[#d81b60] font-black text-3xl" />,
     FiCheckCircle: (
       <FiCheckCircle className="text-green-600 font-black text-3xl" />
     ),
     FiXCircle: <FiXCircle className="text-red-600 font-black text-3xl" />,
-
-    TbBuilding: (
-      <RiBuilding4Line className="text-[#00a65a] font-black text-3xl" />
-    ),
-    GoInbox: <LuInbox className="text-teal-600 font-black text-3xl" />,
-    LuNotebookText: (
-      <LuNotebookText className="text-teal-600 font-black text-3xl" />
-    ),
-    FiUsers: <FiUsers className="text-red-600 font-black text-3xl" />,
-    TfiMenuAlt: <TfiMenuAlt className="text-orange-600 font-black text-3xl" />,
-    TbUserShield: (
-      <TbUserShield className="text-yellow-600 font-black text-3xl" />
-    ),
   };
 
   return (
