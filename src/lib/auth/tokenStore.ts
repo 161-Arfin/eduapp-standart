@@ -1,4 +1,9 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 
@@ -26,7 +31,8 @@ const STORE_FILE = path.join(STORE_DIR, "session-tokens.json");
 let storeQueue: Promise<unknown> = Promise.resolve();
 
 const getStoreSecret = () => {
-  const secret = process.env.AUTH_TOKEN_STORE_SECRET ?? process.env.NEXTAUTH_SECRET;
+  const secret =
+    process.env.AUTH_TOKEN_STORE_SECRET ?? process.env.NEXTAUTH_SECRET;
   if (!secret) {
     throw new Error(
       "AUTH_TOKEN_STORE_SECRET or NEXTAUTH_SECRET must be configured",
@@ -38,7 +44,10 @@ const getStoreSecret = () => {
 const seal = (value: string) => {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", getStoreSecret(), iv);
-  const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(value, "utf8"),
+    cipher.final(),
+  ]);
   const authTag = cipher.getAuthTag();
 
   return [

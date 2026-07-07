@@ -9,7 +9,6 @@ export type PackageCapabilities = {
   canAccessRecycleBin: boolean;
   uploadMode: "pdf-only" | "all";
   defaultRetentionDate?: string;
-  useDefaultStorageLocation: boolean;
   useDefaultClassification: boolean;
 };
 
@@ -23,7 +22,6 @@ const PACKAGE_CAPABILITIES: Record<PackageKey, PackageCapabilities> = {
     canAccessRecycleBin: true,
     uploadMode: "pdf-only",
     defaultRetentionDate: "2099-12-31",
-    useDefaultStorageLocation: true,
     useDefaultClassification: true,
   },
   advanced: {
@@ -34,7 +32,6 @@ const PACKAGE_CAPABILITIES: Record<PackageKey, PackageCapabilities> = {
     canConfigureFileAccess: true,
     canAccessRecycleBin: true,
     uploadMode: "all",
-    useDefaultStorageLocation: false,
     useDefaultClassification: false,
   },
 };

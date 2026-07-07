@@ -33,8 +33,6 @@ const normalizeUserProfile = (user: any) => {
     id: user.id ?? user.id_users,
     fullName: user.fullName ?? user.name ?? "",
     instansiName: user.instansiName ?? user.instansi_name ?? "",
-    cabangName: user.cabangName ?? user.cabang_name ?? "",
-    divisiName: user.divisiName ?? user.divisi_name ?? "",
     photoProfileUrl: user.photoProfileUrl ?? user.photo_thumb ?? "",
     isActive: user.isActive ?? user.is_active ?? false,
     joinAt: user.joinAt ?? user.created_at ?? "",

@@ -1,6 +1,6 @@
 import Head from "next/head";
 import React, { useEffect } from "react";
-// import icon from "../../../../../public/assets/images/company/only_logo_eduarsip_transparant.png";
+import icon from "../../../../../public/assets/images/company/only_logo_eduarsip_transparant.png";
 import Sidebar from "../Sidebar";
 import Navbar from "../Navbar";
 import { useDispatch, useSelector } from "react-redux";
@@ -34,8 +34,8 @@ const AppShellFront = ({ title, children }: AppShellFrontProps) => {
         <title>{`EduArsip | ${title}`}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="description" content={title} />
-        {/* <link rel="icon" href={icon.src} />
-        <link rel="apple-touch-icon" href={icon.src} /> */}
+        <link rel="icon" href={icon.src} />
+        <link rel="apple-touch-icon" href={icon.src} />
       </Head>
       {children}
       {isShowModal[keys[0]] && (

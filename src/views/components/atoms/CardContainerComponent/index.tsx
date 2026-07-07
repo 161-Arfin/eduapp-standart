@@ -32,9 +32,7 @@ const CardContainerComponent = ({
       {/* Card Header */}
       {title ? (
         <div className="rounded-md bg-transparent border-b-0 py-4 items-center justify-between flex px-4 mb-0">
-          <h6 className="text-[#6777ef] leading-tight font-medium">
-            {title}
-          </h6>
+          <h6 className="text-[#6777ef] leading-tight font-medium">{title}</h6>
           {buttonCard && (
             <button
               type="button"

@@ -20,10 +20,6 @@ type UserResponse = {
     username?: string;
     instansi_id?: string | number;
     instansi_name?: string;
-    cabang_id?: string | number | null;
-    cabang_name?: string | null;
-    divisi_id?: string | number | null;
-    divisi_name?: string | null;
     email?: string;
     gender?: string | number;
     address?: string;
@@ -147,10 +143,6 @@ const authOptions: NextAuthOptions = {
         token.name = user.name;
         token.instansiId = user.instansi_id;
         token.instansiName = user.instansi_name;
-        // token.cabangId = user.cabang_id ?? null;
-        // token.cabangName = user.cabang_name ?? null;
-        // token.divisiId = user.divisi_id ?? null;
-        // token.divisiName = user.divisi_name ?? null;
         token.birthDate = user.birthdate;
         token.birthPlace = user.birthplace;
         token.gender = user.gender;
@@ -179,18 +171,6 @@ const authOptions: NextAuthOptions = {
       }
       if ("instansiName" in token) {
         session.user.instansiName = token.instansiName;
-      }
-      if ("cabangId" in token) {
-        session.user.cabangId = token.cabangId;
-      }
-      if ("cabangName" in token) {
-        session.user.cabangName = token.cabangName;
-      }
-      if ("divisiId" in token) {
-        session.user.divisiId = token.divisiId;
-      }
-      if ("divisiName" in token) {
-        session.user.divisiName = token.divisiName;
       }
       if ("birthDate" in token) {
         session.user.birthDate = token.birthDate;

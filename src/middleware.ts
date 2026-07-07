@@ -9,18 +9,10 @@ export function mainMiddleware(req: NextRequest) {
 
 export default withAuth(mainMiddleware, [
   "/dashboard",
-  "/divisi",
-  "/cabang",
   "/instansi",
-  "/user",
   "/auth",
   "/report",
   "/update-profile",
-  "/lokasi",
-  "/rak",
-  "/baris",
-  "/box",
-  "/map",
   "/arsip",
   "/home",
 ]);
