@@ -41,7 +41,7 @@ export default async function handler(
   try {
     const { data } = await fetchExternalJson<UpstreamResponse>(
       req,
-      "/api/v1/instansi",
+      "/v1/auth/instansi",
       { method: "GET" }
     );
 
