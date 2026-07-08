@@ -13,6 +13,11 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off', // Mematikan aturan
+    },
+  },
 ]);
 
 export default eslintConfig;

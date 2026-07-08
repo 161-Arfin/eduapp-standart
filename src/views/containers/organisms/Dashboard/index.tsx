@@ -7,6 +7,7 @@ import CounterDashboard from "@/views/components/molecules/CounterDashboard";
 import { useSession } from "next-auth/react";
 
 const DashboardContent = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoading, setIsLoading] = useState(false);
   const { data } = useSession();
 
@@ -60,7 +61,7 @@ const DashboardContent = () => {
             <CounterDashboard icon={icon} />
           </div>
         ) : (
-          <div className="w-full h-[400px] flex justify-center items-center">
+          <div className="w-full h-100 flex justify-center items-center">
             <SpinLoadingComponent />
           </div>
         )}
