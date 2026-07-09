@@ -27,8 +27,6 @@ type UserResponse = {
     is_active?: boolean;
     photo?: string;
     photo_thumb?: string;
-    birthplace?: string;
-    birthdate?: string;
     created_by?: string;
     usertype_id?: string | number;
     usertype_name?: string;
@@ -106,10 +104,13 @@ const authOptions: NextAuthOptions = {
 
           const resolvedUsertypeId = parseUsertypeId(user.data.usertype_id);
           const resolvedUsertypeName =
-            typeof user.data.usertype_name === "string" &&
-            user.data.usertype_name.trim() !== ""
-              ? user.data.usertype_name
-              : "Administrator";
+            typeof user.data.usertype_id === "number" &&
+            user.data.usertype_id == 5
+              ? "Grand Admin"
+              : typeof user.data.usertype_id === "number" &&
+                  user.data.usertype_id == 3
+                ? "Administrator"
+                : "Staff";
 
           return {
             ...user.data,
@@ -119,8 +120,6 @@ const authOptions: NextAuthOptions = {
               accessToken: apiToken,
               refreshToken: authToken?.refresh_token ?? null,
             },
-            name: user.data.name ?? user.data.username ?? username,
-            username: user.data.username ?? username,
           } as any;
         } catch {
           return null;
@@ -129,7 +128,7 @@ const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account, profile, user }: any) {
+    async jwt({ token, account, user }: any) {
       if (account?.provider === "credentials") {
         const authSessionKey = createAuthSessionKey();
         await saveAuthSessionTokens(authSessionKey, {
@@ -143,18 +142,16 @@ const authOptions: NextAuthOptions = {
         token.name = user.name;
         token.instansiId = user.instansi_id;
         token.instansiName = user.instansi_name;
-        token.birthDate = user.birthdate;
-        token.birthPlace = user.birthplace;
         token.gender = user.gender;
         token.address = user.address;
         token.phone = user.phone;
         token.email = user.email;
         token.username = user.username;
         token.usertypeId = user.usertype_id;
+        token.usertypeName = user.usertype_name;
         token.isActive = user.is_active;
         token.image = user.photo;
         token.photoProfileUrl = user.photo_thumb;
-        token.usertypeName = user.usertype_name ?? "Administrator";
       }
 
       return token;
@@ -171,12 +168,6 @@ const authOptions: NextAuthOptions = {
       }
       if ("instansiName" in token) {
         session.user.instansiName = token.instansiName;
-      }
-      if ("birthDate" in token) {
-        session.user.birthDate = token.birthDate;
-      }
-      if ("birthPlace" in token) {
-        session.user.birthPlace = token.birthPlace;
       }
       if ("gender" in token) {
         session.user.gender = token.gender;
@@ -196,6 +187,9 @@ const authOptions: NextAuthOptions = {
       if ("usertypeId" in token) {
         session.user.usertypeId = token.usertypeId;
       }
+      if ("usertypeName" in token) {
+        session.user.usertypeName = token.usertypeName;
+      }
       if ("isActive" in token) {
         session.user.isActive = token.isActive;
       }
@@ -204,9 +198,6 @@ const authOptions: NextAuthOptions = {
       }
       if ("photoProfileUrl" in token) {
         session.user.photoProfileUrl = token.photoProfileUrl;
-      }
-      if ("usertypeName" in token) {
-        session.user.usertypeName = token.usertypeName;
       }
 
       return session;

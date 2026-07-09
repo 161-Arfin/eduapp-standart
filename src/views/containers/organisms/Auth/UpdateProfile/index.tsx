@@ -1,5 +1,4 @@
-﻿import { storage } from "@/lib/firebase/init";
-import { genderOption, phoneRegExp, usernameRegExp } from "@/utils/data/static";
+﻿import { genderOption, phoneRegExp, usernameRegExp } from "@/utils/data/static";
 import ButtonComponent from "@/views/components/atoms/ButtonComponent";
 import CardContainerComponent from "@/views/components/atoms/CardContainerComponent";
 import FileInputComponent from "@/views/components/atoms/FileInputComponent";
@@ -7,12 +6,6 @@ import SelectComponent from "@/views/components/atoms/SelectComponent";
 import SpinLoadingComponent from "@/views/components/atoms/SpinLoadingComponent";
 import TextInputComponent from "@/views/components/atoms/TextInputComponent";
 import TextInputGroupComponent from "@/views/components/atoms/TextInputGroupComponent";
-import {
-  deleteObject,
-  getDownloadURL,
-  ref,
-  uploadBytes,
-} from "firebase/storage";
 import { useFormik } from "formik";
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
@@ -133,11 +126,7 @@ const UpdateProfile = () => {
 
         if (photoFile && uploadUserId) {
           const formData = new FormData();
-          formData.append(
-            profilePhotoFieldName,
-            photoFile,
-            photoFile.name,
-          );
+          formData.append(profilePhotoFieldName, photoFile, photoFile.name);
           const formDataEntries = Array.from(formData.entries()).map(
             ([key, value]) => ({
               key,
@@ -425,7 +414,7 @@ const UpdateProfile = () => {
             </form>
           </div>
         ) : (
-          <div className="w-full h-[400px] flex justify-center items-center">
+          <div className="w-full h-100 flex justify-center items-center">
             <SpinLoadingComponent />
           </div>
         )}

@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { fetchExternalJson, sendApiError } from "@/lib/api/external";
-import { filterActiveArsip } from "../arsip/_helpers";
 
 type Data = {
   status: boolean;
@@ -13,9 +12,6 @@ type UpstreamResponse = {
   success?: boolean;
   data?: any[] | number;
 };
-
-const isTruthyValue = (value: unknown) =>
-  value === true || value === 1 || value === "1" || value === "true";
 
 export default async function handler(
   req: NextApiRequest,
@@ -31,30 +27,41 @@ export default async function handler(
   }
 
   try {
+    // Total arsip
     const { data: arsip } = await fetchExternalJson<UpstreamResponse>(
       req,
-      "/v1/auth/arsip",
+      "/v1/auth/arsip/count/byinstansi",
       {
         method: "GET",
       },
     );
 
-    const activeItems = Array.isArray(arsip?.data)
-      ? filterActiveArsip(arsip.data)
-      : [];
+    // Total arsip aktif
+    const { data: arsipAktif } = await fetchExternalJson<UpstreamResponse>(
+      req,
+      "/v1/auth/arsip/count-active/byinstansi",
+      {
+        method: "GET",
+      },
+    );
+    
+    // Total arsip inaktif
+    const { data: arsipInaktif } = await fetchExternalJson<UpstreamResponse>(
+      req,
+      "/v1/auth/arsip/count-inactive/byinstansi",
+      {
+        method: "GET",
+      },
+    );
 
     const dashboardData = {
-      arsip: arsip?.success ? activeItems.length : 0,
-      arsip_active: arsip?.success
-        ? activeItems.filter((item) => isTruthyValue(item?.status_retensi))
-            .length
+      arsip: arsip?.success ? arsip.data : 0,
+      arsip_active: arsipAktif?.success
+        ? arsipAktif.data
         : 0,
-      arsip_inactive: arsip?.success
-        ? activeItems.filter((item) => !isTruthyValue(item?.status_retensi))
-            .length
+      arsip_inactive: arsipInaktif?.success
+        ? arsipInaktif.data
         : 0,
-      peminjaman: 0,
-      pengembalian: 0,
     };
 
     res.status(200).json({

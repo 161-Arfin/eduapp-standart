@@ -3,7 +3,6 @@ import React, { useRef } from "react";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { useDispatch, useSelector } from "react-redux";
 import { setSidebarToggle } from "@/lib/redux/actions/SidebarToggleSlice";
-import { setDarkModeToggle } from "@/lib/redux/actions/DarkModeToggleSlice";
 import { setDropdownNavbar } from "@/lib/redux/actions/DropdownNavbarSlice";
 import DropdownNavbarComponent from "@/views/components/atoms/DropdownNavbarComponent";
 import { CSSTransition } from "react-transition-group";
@@ -26,7 +25,7 @@ const Navbar = ({ title }: NavbarProps) => {
   return (
     <div className="flex items-center gap-4 w-full py-3 px-4 sm:px-4 bg-gray-50">
       {/* Mobile Menu Button */}
-      <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 bg-white shadow-md rounded-full sm:hidden">
+      <div className="shrink-0 flex items-center justify-center h-12 w-12 bg-white shadow-md rounded-full sm:hidden">
         <GiHamburgerMenu
           size={22}
           className="text-gray-500 hover:text-gray-600 cursor-pointer"
@@ -74,7 +73,7 @@ const Navbar = ({ title }: NavbarProps) => {
       </div>
 
       {/* Profile Dropdown */}
-      <div className="relative flex-shrink-0">
+      <div className="relative shrink-0">
         <div
           onClick={() => dispatch(setDropdownNavbar(!isToggledDropdownNavbar))}
           className="h-12 w-12 flex justify-center items-center rounded-full bg-white shadow-md cursor-pointer overflow-hidden"
