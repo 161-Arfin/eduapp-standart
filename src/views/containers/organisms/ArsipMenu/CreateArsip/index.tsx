@@ -517,10 +517,7 @@ const CreateArsip = () => {
                   {/* Row */}
                   <div className="flex flex-wrap mx-2 mb-0">
                     {/* Col */}
-                    {data?.user.usertypeId == 5 ||
-                    data?.user.usertypeId == 1 ||
-                    data?.user.usertypeId == 2 ||
-                    data?.user.usertypeId == 3 ? (
+                    {data?.user.usertypeId == 5 ? (
                       <div
                         className={`mb-3 w-full md:w-1/2 flex-2 px-0 md:px-3`}
                       >

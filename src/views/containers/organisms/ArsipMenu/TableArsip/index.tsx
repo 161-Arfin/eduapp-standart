@@ -1,3 +1,5 @@
+/* eslint-disable prefer-const */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { setShowModal } from "@/lib/redux/actions/ShowModalSlice";
 import { setAlertMessage } from "@/lib/redux/actions/alertMessageSlice";
 import ButtonComponent from "@/views/components/atoms/ButtonComponent";
@@ -16,7 +18,6 @@ import * as yup from "yup";
 import Swal from "sweetalert2";
 import DetailComponent from "@/views/components/atoms/DetailComponent";
 import Link from "next/link";
-import MultipleCheckboxComponent from "@/views/components/atoms/MultipleCheckboxComponent";
 import DatepickerComponent from "@/views/components/atoms/DatepickerComponent";
 import MultipleFileInputComponent from "@/views/components/atoms/MultipleFileInputComponent";
 import RadioComponent from "@/views/components/atoms/RadioComponent";
@@ -44,7 +45,6 @@ interface Data {
   instansi_name: string;
   deskripsi_arsip: string;
   masa_retensi: string;
-  is_available: React.JSX.Element;
   status_file_id: number;
   status_file: React.JSX.Element;
   status_retensi: React.JSX.Element;
@@ -171,8 +171,6 @@ const TableArsip = () => {
   const [companySelected, setCompanySelected] = useState({});
   const [userSelected, setUserSelected] = useState({});
   const [detail, setDetail] = useState<any>({});
-  const [jenisArsip, setJenisArsip] = useState([]);
-  const [arsipJenisIdSelected, setArsipJenisIdSelected] = useState([]);
   const [fileArsip, setFileArsip] = useState([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lastDoc, setLastDoc] = useState([]);
@@ -216,32 +214,32 @@ const TableArsip = () => {
     value !== "0" &&
     value !== 0;
 
-  const resolveInstansiName = (
-    instansiId?: string | number,
-    arsipId?: string | number,
-  ) => {
-    if (hasSelectedValue(arsipId) && Array.isArray(rows)) {
-      const row = rows.find((item: any) => item.id == arsipId);
-      if (row?.instansi_name) {
-        return row.instansi_name;
-      }
-    }
+  // const resolveInstansiName = (
+  //   instansiId?: string | number,
+  //   arsipId?: string | number,
+  // ) => {
+  //   if (hasSelectedValue(arsipId) && Array.isArray(rows)) {
+  //     const row = rows.find((item: any) => item.id == arsipId);
+  //     if (row?.instansi_name) {
+  //       return row.instansi_name;
+  //     }
+  //   }
 
-    if (hasSelectedValue(instansiId) && Array.isArray(companyOption)) {
-      const selectedInstansi = (companyOption as any[]).find(
-        (item: any) => item.id == instansiId,
-      );
-      if (selectedInstansi?.name) {
-        return selectedInstansi.name;
-      }
-    }
+  //   if (hasSelectedValue(instansiId) && Array.isArray(companyOption)) {
+  //     const selectedInstansi = (companyOption as any[]).find(
+  //       (item: any) => item.id == instansiId,
+  //     );
+  //     if (selectedInstansi?.name) {
+  //       return selectedInstansi.name;
+  //     }
+  //   }
 
-    if (detail?.instansi_name) {
-      return detail.instansi_name;
-    }
+  //   if (detail?.instansi_name) {
+  //     return detail.instansi_name;
+  //   }
 
-    return data?.user?.instansiName || "EduArsip";
-  };
+  //   return data?.user?.instansiName || "EduArsip";
+  // };
 
   // Set notifikasi
   useEffect(() => {
@@ -338,7 +336,6 @@ const TableArsip = () => {
     instansi_name: string,
     deskripsi_arsip: string,
     masa_retensi: string,
-    is_available: React.JSX.Element,
     status_file_id: number,
     status_file: React.JSX.Element,
     status_retensi: React.JSX.Element,
@@ -357,7 +354,6 @@ const TableArsip = () => {
       instansi_name,
       deskripsi_arsip,
       masa_retensi,
-      is_available,
       status_file_id,
       status_file,
       status_retensi,
@@ -427,7 +423,7 @@ const TableArsip = () => {
         }
 
         if (responseJson?.data && responseJson.data.length > 0) {
-          const result = responseJson.data.map((data: any, index: number) => {
+          const result = responseJson.data.map((data: any) => {
             return createDataOption(data.id_instansi, data.instansi_name);
           });
           const listOption: any = [
@@ -448,14 +444,40 @@ const TableArsip = () => {
 
   // Get Owner Archive Data Option
   const getDataOwnerUser = async () => {
-    if (data?.user.usertypeId != undefined) {
+    if (
+      data?.user.usertypeId != undefined &&
+      ((data.user?.usertypeId == 3 && data?.user.instansiId != undefined) ||
+        (data.user?.usertypeId != 3 && data?.user.instansiId != undefined))
+    ) {
       try {
-        const response = await fetch(
-          `../../api/user/user-options/${data.user.usertypeId}`,
-          {
-            method: "GET",
-          },
-        );
+        let response: Response;
+        if (data.user?.usertypeId == 3) {
+          response = await fetch(
+            `../../api/user/user-options/${data.user.usertypeId}`,
+            {
+              method: "GET",
+            },
+          );
+        } else {
+          let instansiId;
+          if (data?.user.usertypeId == 5) {
+            instansiId = formik.values.instansiId;
+          } else {
+            instansiId = data.user.instansiId;
+          }
+
+          if (!hasSelectedValue(instansiId)) {
+            setUserOption([{ id: 0, name: "- Pilih Instansi Dulu -" }]);
+            return;
+          }
+
+          response = await fetch(
+            `../../api/user/user-options/${data.user.usertypeId}/${instansiId}`,
+            {
+              method: "GET",
+            },
+          );
+        }
 
         if (!response.ok) {
           setUserOption([{ id: 0, name: "- Tidak tersedia -" }]);
@@ -487,7 +509,7 @@ const TableArsip = () => {
         }
 
         if (responseJson?.data && responseJson.data.length > 0) {
-          const result = responseJson.data.map((data: any, index: number) => {
+          const result = responseJson.data.map((data: any) => {
             return createDataOption(data.id_users, data.name);
           });
           const listOption: any =
@@ -572,7 +594,6 @@ const TableArsip = () => {
     noArsip: string;
     arsipName: string;
     deskripsiArsip: string;
-    jenisArsipId: Array<number>;
     masaRetensi: string;
     statusFile: string;
     keterangan: string;
@@ -585,7 +606,6 @@ const TableArsip = () => {
       noArsip: "",
       arsipName: "",
       deskripsiArsip: "",
-      jenisArsipId: [],
       masaRetensi: "",
       statusFile: "",
       keterangan: "",
@@ -661,185 +681,185 @@ const TableArsip = () => {
         }),
       };
 
-      // Update arsip
-      const resultUpdateArsip = await fetch(`../api/arsip/${values.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(valueArsip),
-      });
-      const resultUpdateArsipJson = await resultUpdateArsip
-        .json()
-        .catch(() => null);
+      // // Update arsip
+      // const resultUpdateArsip = await fetch(`../api/arsip/${values.id}`, {
+      //   method: "PUT",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify(valueArsip),
+      // });
+      // const resultUpdateArsipJson = await resultUpdateArsip
+      //   .json()
+      //   .catch(() => null);
 
-      // Tambah File Arsip
-      if (values.fileArsip) {
-        const filesCount = values.fileArsip.length;
+      // // Tambah File Arsip
+      // if (values.fileArsip) {
+      //   const filesCount = values.fileArsip.length;
 
-        if (filesCount > 0) {
-          const instansiName = resolveInstansiName(instansiId, values.id);
-          let resultStatus: any = [];
-          for (let i = 0; i < filesCount; i++) {
-            const fileName =
-              "(" +
-              new Date().getDate() +
-              "-" +
-              (new Date().getMonth() + 1) +
-              "-" +
-              new Date().getFullYear() +
-              " " +
-              new Date().getHours() +
-              ":" +
-              new Date().getMinutes() +
-              ":" +
-              new Date().getSeconds() +
-              ") " +
-              values.fileArsip[i].name;
+      //   if (filesCount > 0) {
+      //     // const instansiName = resolveInstansiName(instansiId, values.id);
+      //     let resultStatus: any = [];
+      //     for (let i = 0; i < filesCount; i++) {
+      //       const fileName =
+      //         "(" +
+      //         new Date().getDate() +
+      //         "-" +
+      //         (new Date().getMonth() + 1) +
+      //         "-" +
+      //         new Date().getFullYear() +
+      //         " " +
+      //         new Date().getHours() +
+      //         ":" +
+      //         new Date().getMinutes() +
+      //         ":" +
+      //         new Date().getSeconds() +
+      //         ") " +
+      //         values.fileArsip[i].name;
 
-            const imageRef = await ref(
-              storage,
-              `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
-            );
+      //       // const imageRef = await ref(
+      //       //   storage,
+      //       //   `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
+      //       // );
 
-            await uploadBytes(imageRef, values.fileArsip[i])
-              .then(async (snapshot) => {
-                await getDownloadURL(snapshot.ref)
-                  .then(async (url) => {
-                    const valueArsipFiles = {
-                      arsip_id: values.id,
-                      file_upload: fileName,
-                    };
+      //       await uploadBytes(imageRef, values.fileArsip[i])
+      //         .then(async (snapshot) => {
+      //           await getDownloadURL(snapshot.ref)
+      //             .then(async (url) => {
+      //               const valueArsipFiles = {
+      //                 arsip_id: values.id,
+      //                 file_upload: fileName,
+      //               };
 
-                    const resultArsipFiles = await fetch(
-                      "../api/arsip-files/create",
-                      {
-                        method: "POST",
-                        body: JSON.stringify(valueArsipFiles),
-                      },
-                    );
-                    const responseResult = await resultArsipFiles.json();
+      //               const resultArsipFiles = await fetch(
+      //                 "../api/arsip-files/create",
+      //                 {
+      //                   method: "POST",
+      //                   body: JSON.stringify(valueArsipFiles),
+      //                 },
+      //               );
+      //               const responseResult = await resultArsipFiles.json();
 
-                    if (resultArsipFiles.status === 201) {
-                      const valueFirebase = {
-                        arsip_files_id: responseResult.data.id,
-                        link: url,
-                      };
+      //               if (resultArsipFiles.status === 201) {
+      //                 const valueFirebase = {
+      //                   arsip_files_id: responseResult.data.id,
+      //                   link: url,
+      //                 };
 
-                      const resultFirebase = await fetch(
-                        "../api/firebase/create",
-                        {
-                          method: "POST",
-                          body: JSON.stringify(valueFirebase),
-                        },
-                      );
+      //                 const resultFirebase = await fetch(
+      //                   "../api/firebase/create",
+      //                   {
+      //                     method: "POST",
+      //                     body: JSON.stringify(valueFirebase),
+      //                   },
+      //                 );
 
-                      if (resultFirebase.status === 201) {
-                        resultStatus.push(true);
-                      } else {
-                        resultStatus.push(false);
-                      }
-                    } else {
-                      dispatch(
-                        setAlertMessage({
-                          status: false,
-                          message: "Data user gagal disimpan",
-                        }),
-                      );
-                      setIsSaveLoading(false);
-                    }
-                  })
-                  .catch(() => {
-                    dispatch(
-                      setAlertMessage({
-                        status: false,
-                        message: "Data user gagal disimpan",
-                      }),
-                    );
-                    setIsSaveLoading(false);
-                  });
-              })
-              .catch(() => {
-                dispatch(
-                  setAlertMessage({
-                    status: false,
-                    message: "Data user gagal disimpan",
-                  }),
-                );
-                setIsSaveLoading(false);
-              });
-          }
+      //                 if (resultFirebase.status === 201) {
+      //                   resultStatus.push(true);
+      //                 } else {
+      //                   resultStatus.push(false);
+      //                 }
+      //               } else {
+      //                 dispatch(
+      //                   setAlertMessage({
+      //                     status: false,
+      //                     message: "Data user gagal disimpan",
+      //                   }),
+      //                 );
+      //                 setIsSaveLoading(false);
+      //               }
+      //             })
+      //             .catch(() => {
+      //               dispatch(
+      //                 setAlertMessage({
+      //                   status: false,
+      //                   message: "Data user gagal disimpan",
+      //                 }),
+      //               );
+      //               setIsSaveLoading(false);
+      //             });
+      //         })
+      //         .catch(() => {
+      //           dispatch(
+      //             setAlertMessage({
+      //               status: false,
+      //               message: "Data user gagal disimpan",
+      //             }),
+      //           );
+      //           setIsSaveLoading(false);
+      //         });
+      //     }
 
-          if (resultUpdateArsip.status === 200 && resultStatus.length > 0) {
-            const errorHandler = resultStatus.filter(
-              (status: boolean) => status == false,
-            );
+      //     if (resultUpdateArsip.status === 200 && resultStatus.length > 0) {
+      //       const errorHandler = resultStatus.filter(
+      //         (status: boolean) => status == false,
+      //       );
 
-            if (errorHandler.length == 0) {
-              toast.success("Data arsip berhasil disimpan", {
-                position: "top-right",
-                autoClose: 5000,
-                hideProgressBar: true,
-                closeOnClick: false,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                theme: "light",
-              });
-              handleReset();
-              dispatch(setShowModal({ editArsipModal: false }));
-              setIsSaveLoading(false);
-              getData();
-            }
-          } else {
-            toast.error(
-              resultUpdateArsipJson?.message || "Data arsip gagal disimpan",
-              {
-                position: "top-right",
-                autoClose: 5000,
-                hideProgressBar: true,
-                closeOnClick: false,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                theme: "light",
-              },
-            );
-            setIsSaveLoading(false);
-          }
-        }
-      } else {
-        if (resultUpdateArsip.status === 200) {
-          toast.success("Data arsip berhasil disimpan", {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          dispatch(setShowModal({ editArsipModal: false }));
-          setIsSaveLoading(false);
-          getData();
-        } else {
-          toast.error(
-            resultUpdateArsipJson?.message || "Data arsip gagal disimpan",
-            {
-              position: "top-right",
-              autoClose: 5000,
-              hideProgressBar: true,
-              closeOnClick: false,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "light",
-            },
-          );
-          setIsSaveLoading(false);
-        }
-      }
+      //       if (errorHandler.length == 0) {
+      //         toast.success("Data arsip berhasil disimpan", {
+      //           position: "top-right",
+      //           autoClose: 5000,
+      //           hideProgressBar: true,
+      //           closeOnClick: false,
+      //           pauseOnHover: true,
+      //           draggable: true,
+      //           progress: undefined,
+      //           theme: "light",
+      //         });
+      //         handleReset();
+      //         dispatch(setShowModal({ editArsipModal: false }));
+      //         setIsSaveLoading(false);
+      //         getData();
+      //       }
+      //     } else {
+      //       toast.error(
+      //         resultUpdateArsipJson?.message || "Data arsip gagal disimpan",
+      //         {
+      //           position: "top-right",
+      //           autoClose: 5000,
+      //           hideProgressBar: true,
+      //           closeOnClick: false,
+      //           pauseOnHover: true,
+      //           draggable: true,
+      //           progress: undefined,
+      //           theme: "light",
+      //         },
+      //       );
+      //       setIsSaveLoading(false);
+      //     }
+      //   }
+      // } else {
+      //   if (resultUpdateArsip.status === 200) {
+      //     toast.success("Data arsip berhasil disimpan", {
+      //       position: "top-right",
+      //       autoClose: 5000,
+      //       hideProgressBar: true,
+      //       closeOnClick: false,
+      //       pauseOnHover: true,
+      //       draggable: true,
+      //       progress: undefined,
+      //       theme: "light",
+      //     });
+      //     dispatch(setShowModal({ editArsipModal: false }));
+      //     setIsSaveLoading(false);
+      //     getData();
+      //   } else {
+      //     toast.error(
+      //       resultUpdateArsipJson?.message || "Data arsip gagal disimpan",
+      //       {
+      //         position: "top-right",
+      //         autoClose: 5000,
+      //         hideProgressBar: true,
+      //         closeOnClick: false,
+      //         pauseOnHover: true,
+      //         draggable: true,
+      //         progress: undefined,
+      //         theme: "light",
+      //       },
+      //     );
+      //     setIsSaveLoading(false);
+      //   }
+      // }
     },
     validationSchema: schema,
   });
@@ -874,7 +894,6 @@ const TableArsip = () => {
           },
         );
 
-        // Paket rendah: endpoint /api/arsip/... bisa tidak ada (404) â†’ jangan popup
         if (!response.ok) {
           setRows([]);
           setIsLoading(false);
@@ -889,7 +908,7 @@ const TableArsip = () => {
           setIsLoading(false);
           return;
         }
-
+        console.log(responseJson);
         if (responseJson.status === false) {
           if (packageCapabilities.canManageRetention) {
             toast.error("Internal server error", {
@@ -908,22 +927,6 @@ const TableArsip = () => {
 
         if (responseJson.data && responseJson.data.length > 0) {
           const result = responseJson.data.map((data: any) => {
-            // Status peminjaman
-            let isAvailable: React.JSX.Element;
-            if (data.is_available == true) {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-green-500 text-green-500">
-                  Tersedia
-                </span>
-              );
-            } else {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-red-500 text-red-500">
-                  Dipinjam
-                </span>
-              );
-            }
-
             const statusAccess = getStatusAccessBadge(data.status_file);
 
             // Status retensi
@@ -1011,7 +1014,6 @@ const TableArsip = () => {
               data.instansi_name,
               data.deskripsi_arsip,
               formatMasaRetensi(data.masa_retensi),
-              isAvailable,
               data.status_file,
               statusAccess,
               statusRetensi,
@@ -1030,7 +1032,7 @@ const TableArsip = () => {
           setRows([]);
         }
         setIsLoading(false);
-      } catch (error: any) {
+      } catch {
         toast.error("Internal server error", {
           position: "top-right",
           autoClose: 5000,
@@ -1045,127 +1047,6 @@ const TableArsip = () => {
         setIsLoading(false);
       }
     }
-  };
-
-  const getJenisArsip = async () => {
-    if (!packageCapabilities.canManageClassification) {
-      setJenisArsip([]);
-      return;
-    }
-    if (
-      data?.user.usertypeId != undefined &&
-      data?.user.instansiId != undefined
-    ) {
-      try {
-        const response = await fetch(
-          `../../api/jenis-arsip/${data.user.usertypeId}`,
-          {
-            method: "GET",
-          },
-        );
-        const responseJson = await response.json();
-
-        if (responseJson.status === false) {
-          toast.error("Internal server error", {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          setJenisArsip([]);
-        }
-
-        if (responseJson.data && responseJson.data.length > 0) {
-          const finalResult = responseJson.data.sort(
-            (a: any, b: any) => b.id_jenis - a.id_jenis,
-          );
-          setJenisArsip(finalResult);
-        } else if (responseJson.data && responseJson.data.length == 0) {
-          setJenisArsip([]);
-        }
-      } catch (error: any) {
-        toast.error("Internal server error", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-      }
-    }
-  };
-
-  const getArsipJenisByArsipId = async (id: any) => {
-    if (!packageCapabilities.canManageClassification) {
-      setArsipJenisIdSelected([]);
-      return [];
-    }
-
-    if (
-      data?.user.usertypeId != undefined &&
-      data?.user.instansiId != undefined &&
-      id != undefined
-    ) {
-      try {
-        const response = await fetch(`../../api/arsip-jenis/byarsip/${id}`, {
-          method: "GET",
-        });
-        const responseJson = await response.json();
-
-        if (responseJson.status === false) {
-          if (responseJson.statusCode === 404) {
-            setArsipJenisIdSelected([]);
-            return [];
-          }
-
-          toast.error("Internal server error", {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: true,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          setArsipJenisIdSelected([]);
-          return [];
-        }
-
-        if (Array.isArray(responseJson.data) && responseJson.data.length > 0) {
-          const arsipJenisId = responseJson.data.map(
-            (item: any) => item.jenis_arsip_id,
-          );
-          setArsipJenisIdSelected(arsipJenisId);
-          return arsipJenisId;
-        } else {
-          setArsipJenisIdSelected([]);
-          return [];
-        }
-      } catch (error: any) {
-        toast.error("Internal server error", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: true,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-        setArsipJenisIdSelected([]);
-        return [];
-      }
-    }
-
-    return [];
   };
 
   const getFileArsipByArsipId = async (id: any) => {
@@ -1207,7 +1088,7 @@ const TableArsip = () => {
         } else {
           setFileArsip([]);
         }
-      } catch (error: any) {
+      } catch {
         toast.error("Internal server error", {
           position: "top-right",
           autoClose: 5000,
@@ -1279,11 +1160,8 @@ const TableArsip = () => {
   const getDataByIdForEdit = async (id: string) => {
     const filterResult: any = rows.filter((data: any) => data.id === id);
     // Get by arsip_id tabel arsip_jenis
-    const arsipJenisSelected = packageCapabilities.canManageClassification
-      ? await getArsipJenisByArsipId(id)
-      : [];
     await getFileArsipByArsipId(id);
-
+    console.log(filterResult);
     if (filterResult.length > 0) {
       formik.setValues({
         id: filterResult[0].id,
@@ -1292,7 +1170,6 @@ const TableArsip = () => {
         noArsip: filterResult[0].no_arsip,
         arsipName: filterResult[0].arsip_name,
         deskripsiArsip: filterResult[0].deskripsi_arsip,
-        jenisArsipId: arsipJenisSelected,
         masaRetensi: filterResult[0].masa_retensi,
         statusFile: filterResult[0].status_file_id,
         keterangan: filterResult[0].keterangan_id,
@@ -1310,18 +1187,22 @@ const TableArsip = () => {
     }
 
     getData();
-    if (packageCapabilities.canManageClassification) {
-      getJenisArsip();
-    } else {
-      setJenisArsip([]);
-    }
     setArrData([]); // Reset array data
     if (data?.user.usertypeId == 5) {
       getDataInstansi();
     }
-    getDataOwnerUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.user]);
+
+  // Dropdown userId reference by divisiId
+  useEffect(() => {
+    if (formik.values.instansiId && formik.values.instansiId != "0") {
+      getDataOwnerUser();
+    } else {
+      setUserOption([{ id: 0, name: "- Tidak ada user -" }]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formik.values.instansiId]);
 
   // Handle Delete
   const handleDelete = async (id: any) => {
@@ -1411,17 +1292,17 @@ const TableArsip = () => {
           },
         );
         const responseJsonArsip = await dataArsip.json();
-        const instansiName = resolveInstansiName(
-          responseJsonArsip?.data?.instansi_id,
-          responseJson.data.arsip_id,
-        );
+        // const instansiName = resolveInstansiName(
+        //   responseJsonArsip?.data?.instansi_id,
+        //   responseJson.data.arsip_id,
+        // );
 
-        // Untuk hapus file di firebase
-        const desertRef = ref(
-          storage,
-          `eduarsip-app/fileArsip/${instansiName}/${responseJson.data.file_upload}`,
-        );
-        deleteObject(desertRef);
+        // // Untuk hapus file di firebase
+        // const desertRef = ref(
+        //   storage,
+        //   `eduarsip-app/fileArsip/${instansiName}/${responseJson.data.file_upload}`,
+        // );
+        // deleteObject(desertRef);
 
         // delete data di tabel "firebase" by arsip_files
         const responseDeleteFirebaseData = await fetch(
@@ -1500,22 +1381,6 @@ const TableArsip = () => {
 
         if (resultJson.data.length > 0 && resultJson.cursor != 0) {
           const result = resultJson.data.map((data: any) => {
-            // Status peminjaman
-            let isAvailable: React.JSX.Element;
-            if (data.is_available == true) {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-green-500 text-green-500">
-                  Tersedia
-                </span>
-              );
-            } else {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-red-500 text-red-500">
-                  Dipinjam
-                </span>
-              );
-            }
-
             const statusAccess = getStatusAccessBadge(data.status_file);
 
             // Status retensi
@@ -1603,7 +1468,6 @@ const TableArsip = () => {
               data.instansi_name,
               data.deskripsi_arsip,
               formatMasaRetensi(data.masa_retensi),
-              isAvailable,
               data.status_file,
               statusAccess,
               statusRetensi,
@@ -1668,22 +1532,6 @@ const TableArsip = () => {
         }
         if (resultJson.data.length > 0 && resultJson.cursor != 0) {
           const result = resultJson.data.map((data: any) => {
-            // Status peminjaman
-            let isAvailable: React.JSX.Element;
-            if (data.is_available == true) {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-green-500 text-green-500">
-                  Tersedia
-                </span>
-              );
-            } else {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-red-500 text-red-500">
-                  Dipinjam
-                </span>
-              );
-            }
-
             const statusAccess = getStatusAccessBadge(data.status_file);
 
             // Status retensi
@@ -1771,7 +1619,6 @@ const TableArsip = () => {
               data.instansi_name,
               data.deskripsi_arsip,
               formatMasaRetensi(data.masa_retensi),
-              isAvailable,
               data.status_file,
               statusAccess,
               statusRetensi,
@@ -1832,22 +1679,6 @@ const TableArsip = () => {
 
     if (dataArsipJson.data?.length > 0) {
       const result = dataArsipJson.data.map((data: any) => {
-        // Status peminjaman
-        let isAvailable: React.JSX.Element;
-        if (data.is_available == true) {
-          isAvailable = (
-            <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-green-500 text-green-500">
-              Tersedia
-            </span>
-          );
-        } else {
-          isAvailable = (
-            <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-red-500 text-red-500">
-              Dipinjam
-            </span>
-          );
-        }
-
         const statusAccess = getStatusAccessBadge(data.status_file);
 
         // Status retensi
@@ -1935,7 +1766,6 @@ const TableArsip = () => {
           data.instansi_name,
           data.deskripsi_arsip,
           formatMasaRetensi(data.masa_retensi),
-          isAvailable,
           data.status_file,
           statusAccess,
           statusRetensi,
@@ -2045,9 +1875,7 @@ const TableArsip = () => {
             ) : null}
           </div>
           <div className="flex flex-wrap mx-2 mb-0">
-            {data?.user.usertypeId == 5 ||
-            data?.user.usertypeId == 1 ||
-            data?.user.usertypeId == 2 ? (
+            {data?.user.usertypeId == 5 ? (
               <div className="mb-3 w-full md:w-1/2 flex-2 px-0 md:px-3">
                 <SelectComponent
                   id="userId"
@@ -2333,7 +2161,7 @@ const TableArsip = () => {
                 </h6>
 
                 {/* Force light mode for search input (override dark:* classes inside) */}
-                <div className="dark:[&_input]:!bg-gray-50 dark:[&_input]:!border-gray-200 dark:[&_input]:!text-gray-800 dark:[&_input]:!placeholder-gray-400 dark:[&_svg]:!text-gray-400">
+                <div className="dark:[&_input]:bg-gray-50! dark:[&_input]:border-gray-200! dark:[&_input]:text-gray-800! dark:[&_input]:placeholder-gray-400! dark:[&_svg]:text-gray-400!">
                   <SearchComponent
                     handleClick={(query: any) => handleSearch(query)}
                     changeValue={(query: any) => setSearchQuery(query)}
@@ -2343,7 +2171,7 @@ const TableArsip = () => {
               </div>
 
               {/* Content (force light mode for table header/body) */}
-              <div className="w-full dark:[&_thead]:!bg-white dark:[&_th]:!text-gray-500 dark:[&_td]:!text-gray-800 dark:[&_table]:!divide-gray-200 dark:[&_tbody]:!divide-gray-200">
+              <div className="w-full dark:[&_thead]:bg-white! dark:[&_th]:text-gray-500! dark:[&_td]:text-gray-800! dark:[&_table]:divide-gray-200! dark:[&_tbody]:divide-gray-200!">
                 <TableComponent
                   data={rows}
                   columns={columns}
@@ -2355,7 +2183,7 @@ const TableArsip = () => {
             </div>
           </div>
         ) : (
-          <div className="w-full h-[400px] flex justify-center items-center">
+          <div className="w-full h-100 flex justify-center items-center">
             <SpinLoadingComponent />
           </div>
         )}
