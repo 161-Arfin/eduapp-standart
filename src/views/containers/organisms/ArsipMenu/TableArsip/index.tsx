@@ -44,6 +44,7 @@ interface Data {
   instansi_name: string;
   deskripsi_arsip: string;
   masa_retensi: string;
+  masa_retensi_raw: string;
   is_available: React.JSX.Element;
   status_file_id: number;
   status_file: React.JSX.Element;
@@ -338,6 +339,7 @@ const TableArsip = () => {
     instansi_name: string,
     deskripsi_arsip: string,
     masa_retensi: string,
+    masa_retensi_raw: string,
     is_available: React.JSX.Element,
     status_file_id: number,
     status_file: React.JSX.Element,
@@ -357,6 +359,7 @@ const TableArsip = () => {
       instansi_name,
       deskripsi_arsip,
       masa_retensi,
+      masa_retensi_raw,
       is_available,
       status_file_id,
       status_file,
@@ -1011,6 +1014,7 @@ const TableArsip = () => {
               data.instansi_name,
               data.deskripsi_arsip,
               formatMasaRetensi(data.masa_retensi),
+              data.masa_retensi,
               isAvailable,
               data.status_file,
               statusAccess,
@@ -1293,7 +1297,8 @@ const TableArsip = () => {
         arsipName: filterResult[0].arsip_name,
         deskripsiArsip: filterResult[0].deskripsi_arsip,
         jenisArsipId: arsipJenisSelected,
-        masaRetensi: filterResult[0].masa_retensi,
+        masaRetensi:
+          filterResult[0].masa_retensi_raw ?? filterResult[0].masa_retensi,
         statusFile: filterResult[0].status_file_id,
         keterangan: filterResult[0].keterangan_id,
       });
@@ -1603,6 +1608,7 @@ const TableArsip = () => {
               data.instansi_name,
               data.deskripsi_arsip,
               formatMasaRetensi(data.masa_retensi),
+              data.masa_retensi,
               isAvailable,
               data.status_file,
               statusAccess,
@@ -1771,6 +1777,7 @@ const TableArsip = () => {
               data.instansi_name,
               data.deskripsi_arsip,
               formatMasaRetensi(data.masa_retensi),
+              data.masa_retensi,
               isAvailable,
               data.status_file,
               statusAccess,
@@ -1935,6 +1942,7 @@ const TableArsip = () => {
           data.instansi_name,
           data.deskripsi_arsip,
           formatMasaRetensi(data.masa_retensi),
+          data.masa_retensi,
           isAvailable,
           data.status_file,
           statusAccess,
