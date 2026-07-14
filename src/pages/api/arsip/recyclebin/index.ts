@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { fetchExternalJson, sendApiError } from "@/lib/api/external";
-import { enrichArsipRelations, filterDeletedArsip } from "../_helpers";
 
 type Data = {
   status: boolean;
@@ -41,14 +40,11 @@ export default async function handler(
     );
 
     if (data?.success === true && (data.data?.length ?? 0) > 0) {
-      const deletedItems = filterDeletedArsip(data.data ?? []);
-      const resultData = await enrichArsipRelations(deletedItems, req);
-
       res.status(200).json({
         status: true,
         statusCode: 200,
         message: data.message,
-        data: resultData,
+        data: data.data,
         cursor: null,
         hasMore: false,
       });

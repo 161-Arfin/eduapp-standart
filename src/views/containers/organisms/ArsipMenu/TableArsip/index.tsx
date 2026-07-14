@@ -25,17 +25,11 @@ import { keteranganOptions, statusAksesOptions } from "@/utils/data/static";
 import PreviewFileComponent from "@/views/components/atoms/PreviewFileComponent";
 import { storage } from "@/lib/firebase/init";
 import {
-  getAdditionalArsipPayload,
   getDefaultStatusFileByPackage,
   getKeteranganMeta,
 } from "@/utils/arsip";
 import { getPackageCapabilities } from "@/utils/packageCapabilities";
-import {
-  deleteObject,
-  getDownloadURL,
-  ref,
-  uploadBytes,
-} from "firebase/storage";
+import { getDownloadURL, ref } from "firebase/storage";
 
 interface Data {
   id: number;
@@ -100,15 +94,10 @@ type BaseArsipPayload = {
   no_arsip: string;
   arsip_name: string;
   deskripsi_arsip: string;
+  masa_retensi: string;
   keterangan: number;
   status_file: string | number;
   modified_by: string;
-};
-
-type AdvancedArsipPayload = BaseArsipPayload & {
-  jenis_arsip_id?: number[];
-  masa_retensi: string;
-  status_retensi: boolean;
 };
 
 const ALLOWED_ARCHIVE_FILE_EXTENSIONS = [
@@ -159,9 +148,6 @@ const TableArsip = () => {
   const [fileIsLoading, setFileIsLoading] = useState(false);
   const dispatch = useDispatch();
   const alertMessage = useSelector((state: any) => state.alertMessage?.data);
-
-  // Paket paling rendah: usertypeId = 3 (CRUD arsip basic).
-  // Endpoint `/api/arsip/:usertypeId` dan `/api/jenis-arsip/:usertypeId` tidak tersedia â†’ jangan dipanggil.
   const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
   const [isSaveLoading, setIsSaveLoading] = useState(false);
   const [schemaValidationInstansi, setSchemaValidationInstansi] =
@@ -215,33 +201,6 @@ const TableArsip = () => {
     value !== "0" &&
     value !== 0;
 
-  // const resolveInstansiName = (
-  //   instansiId?: string | number,
-  //   arsipId?: string | number,
-  // ) => {
-  //   if (hasSelectedValue(arsipId) && Array.isArray(rows)) {
-  //     const row = rows.find((item: any) => item.id == arsipId);
-  //     if (row?.instansi_name) {
-  //       return row.instansi_name;
-  //     }
-  //   }
-
-  //   if (hasSelectedValue(instansiId) && Array.isArray(companyOption)) {
-  //     const selectedInstansi = (companyOption as any[]).find(
-  //       (item: any) => item.id == instansiId,
-  //     );
-  //     if (selectedInstansi?.name) {
-  //       return selectedInstansi.name;
-  //     }
-  //   }
-
-  //   if (detail?.instansi_name) {
-  //     return detail.instansi_name;
-  //   }
-
-  //   return data?.user?.instansiName || "EduArsip";
-  // };
-
   // Set notifikasi
   useEffect(() => {
     if (alertMessage) {
@@ -279,7 +238,6 @@ const TableArsip = () => {
     { id: "arsip_name", label: "Nama Arsip", minWidth: 150 },
     { id: "status_file", label: "Status Akses", minWidth: 100 },
     { id: "status_retensi", label: "Status Retensi", minWidth: 100 },
-    // { id: "masa_retensi", label: "Masa Retensi", minWidth: 100 },
     { id: "keterangan", label: "Keterangan", minWidth: 100 },
     {
       id: "action",
@@ -570,17 +528,7 @@ const TableArsip = () => {
       setSchemaValidationUser(
         yup.string().required("Kepemilikan arsip harus diisi"),
       );
-    } else if (data?.user.usertypeId == 1) {
-      setSchemaValidationInstansi(yup.string());
-      setSchemaValidationUser(
-        yup.string().required("Kepemilikan arsip harus diisi"),
-      );
-    } else if (data?.user.usertypeId == 2) {
-      setSchemaValidationInstansi(yup.string());
-      setSchemaValidationUser(
-        yup.string().required("Kepemilikan arsip harus diisi"),
-      );
-    } else if (data?.user.usertypeId == 3 || data?.user.usertypeId == 4) {
+    } else if (data?.user.usertypeId == 3) {
       setSchemaValidationInstansi(yup.string());
       setSchemaValidationUser(yup.string());
     } else {
@@ -652,16 +600,13 @@ const TableArsip = () => {
       if (data?.user.usertypeId == 5) {
         instansiId = values.instansiId;
         userId = values.userId;
-      } else if (data?.user.usertypeId == 1) {
-        instansiId = data?.user.instansiId;
-        userId = values.userId;
-      } else if (data?.user.usertypeId == 2) {
-        instansiId = data?.user.instansiId;
-        userId = values.userId;
       } else {
         instansiId = data?.user.instansiId;
         userId = String(data?.user.id || "");
       }
+
+      // Formating date masa_retensi
+      const masaRetensi = new Date(values.masaRetensi).toISOString();
 
       const basePayload: BaseArsipPayload = {
         instansi_id: Number(instansiId),
@@ -669,200 +614,98 @@ const TableArsip = () => {
         no_arsip: values.noArsip,
         arsip_name: values.arsipName,
         deskripsi_arsip: values.deskripsiArsip,
+        masa_retensi: masaRetensi,
         keterangan: Number(values.keterangan),
         status_file: Number(values.statusFile),
         modified_by: data.user.username,
       };
 
-      const valueArsip: BaseArsipPayload | AdvancedArsipPayload = {
-        ...basePayload,
-        ...getAdditionalArsipPayload({
-          packageCapabilities,
-          masaRetensi: values.masaRetensi,
-          jenisArsipId: values.jenisArsipId,
-          includeDefaults: false,
-        }),
-      };
+      // Update arsip
+      const resultUpdateArsip = await fetch(`../api/arsip/${values.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(basePayload),
+      });
 
-      // // Update arsip
-      // const resultUpdateArsip = await fetch(`../api/arsip/${values.id}`, {
-      //   method: "PUT",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify(valueArsip),
-      // });
-      // const resultUpdateArsipJson = await resultUpdateArsip
-      //   .json()
-      //   .catch(() => null);
+      // Tambah File Arsip
+      if (values.fileArsip) {
+        const filesCount = values.fileArsip.length;
 
-      // // Tambah File Arsip
-      // if (values.fileArsip) {
-      //   const filesCount = values.fileArsip.length;
+        if (filesCount > 0) {
+          const formData = new FormData();
 
-      //   if (filesCount > 0) {
-      //     // const instansiName = resolveInstansiName(instansiId, values.id);
-      //     let resultStatus: any = [];
-      //     for (let i = 0; i < filesCount; i++) {
-      //       const fileName =
-      //         "(" +
-      //         new Date().getDate() +
-      //         "-" +
-      //         (new Date().getMonth() + 1) +
-      //         "-" +
-      //         new Date().getFullYear() +
-      //         " " +
-      //         new Date().getHours() +
-      //         ":" +
-      //         new Date().getMinutes() +
-      //         ":" +
-      //         new Date().getSeconds() +
-      //         ") " +
-      //         values.fileArsip[i].name;
+          Array.from(values.fileArsip as FileList | File[]).forEach((file) => {
+            formData.append("files", file);
+          });
 
-      //       // const imageRef = await ref(
-      //       //   storage,
-      //       //   `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
-      //       // );
+          const uploadResult = await fetch(
+            `../api/arsip-files/upload/${values.id}/${instansiId}`,
+            {
+              method: "PUT",
+              body: formData,
+            },
+          );
 
-      //       await uploadBytes(imageRef, values.fileArsip[i])
-      //         .then(async (snapshot) => {
-      //           await getDownloadURL(snapshot.ref)
-      //             .then(async (url) => {
-      //               const valueArsipFiles = {
-      //                 arsip_id: values.id,
-      //                 file_upload: fileName,
-      //               };
-
-      //               const resultArsipFiles = await fetch(
-      //                 "../api/arsip-files/create",
-      //                 {
-      //                   method: "POST",
-      //                   body: JSON.stringify(valueArsipFiles),
-      //                 },
-      //               );
-      //               const responseResult = await resultArsipFiles.json();
-
-      //               if (resultArsipFiles.status === 201) {
-      //                 const valueFirebase = {
-      //                   arsip_files_id: responseResult.data.id,
-      //                   link: url,
-      //                 };
-
-      //                 const resultFirebase = await fetch(
-      //                   "../api/firebase/create",
-      //                   {
-      //                     method: "POST",
-      //                     body: JSON.stringify(valueFirebase),
-      //                   },
-      //                 );
-
-      //                 if (resultFirebase.status === 201) {
-      //                   resultStatus.push(true);
-      //                 } else {
-      //                   resultStatus.push(false);
-      //                 }
-      //               } else {
-      //                 dispatch(
-      //                   setAlertMessage({
-      //                     status: false,
-      //                     message: "Data user gagal disimpan",
-      //                   }),
-      //                 );
-      //                 setIsSaveLoading(false);
-      //               }
-      //             })
-      //             .catch(() => {
-      //               dispatch(
-      //                 setAlertMessage({
-      //                   status: false,
-      //                   message: "Data user gagal disimpan",
-      //                 }),
-      //               );
-      //               setIsSaveLoading(false);
-      //             });
-      //         })
-      //         .catch(() => {
-      //           dispatch(
-      //             setAlertMessage({
-      //               status: false,
-      //               message: "Data user gagal disimpan",
-      //             }),
-      //           );
-      //           setIsSaveLoading(false);
-      //         });
-      //     }
-
-      //     if (resultUpdateArsip.status === 200 && resultStatus.length > 0) {
-      //       const errorHandler = resultStatus.filter(
-      //         (status: boolean) => status == false,
-      //       );
-
-      //       if (errorHandler.length == 0) {
-      //         toast.success("Data arsip berhasil disimpan", {
-      //           position: "top-right",
-      //           autoClose: 5000,
-      //           hideProgressBar: true,
-      //           closeOnClick: false,
-      //           pauseOnHover: true,
-      //           draggable: true,
-      //           progress: undefined,
-      //           theme: "light",
-      //         });
-      //         handleReset();
-      //         dispatch(setShowModal({ editArsipModal: false }));
-      //         setIsSaveLoading(false);
-      //         getData();
-      //       }
-      //     } else {
-      //       toast.error(
-      //         resultUpdateArsipJson?.message || "Data arsip gagal disimpan",
-      //         {
-      //           position: "top-right",
-      //           autoClose: 5000,
-      //           hideProgressBar: true,
-      //           closeOnClick: false,
-      //           pauseOnHover: true,
-      //           draggable: true,
-      //           progress: undefined,
-      //           theme: "light",
-      //         },
-      //       );
-      //       setIsSaveLoading(false);
-      //     }
-      //   }
-      // } else {
-      //   if (resultUpdateArsip.status === 200) {
-      //     toast.success("Data arsip berhasil disimpan", {
-      //       position: "top-right",
-      //       autoClose: 5000,
-      //       hideProgressBar: true,
-      //       closeOnClick: false,
-      //       pauseOnHover: true,
-      //       draggable: true,
-      //       progress: undefined,
-      //       theme: "light",
-      //     });
-      //     dispatch(setShowModal({ editArsipModal: false }));
-      //     setIsSaveLoading(false);
-      //     getData();
-      //   } else {
-      //     toast.error(
-      //       resultUpdateArsipJson?.message || "Data arsip gagal disimpan",
-      //       {
-      //         position: "top-right",
-      //         autoClose: 5000,
-      //         hideProgressBar: true,
-      //         closeOnClick: false,
-      //         pauseOnHover: true,
-      //         draggable: true,
-      //         progress: undefined,
-      //         theme: "light",
-      //       },
-      //     );
-      //     setIsSaveLoading(false);
-      //   }
-      // }
+          if (resultUpdateArsip.status === 200 && uploadResult.ok) {
+            toast.success("Data arsip berhasil disimpan", {
+              position: "top-right",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: false,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: "light",
+            });
+            handleReset();
+            dispatch(setShowModal({ editArsipModal: false }));
+            setIsSaveLoading(false);
+            getData();
+          } else {
+            toast.error("Data arsip gagal disimpan", {
+              position: "top-right",
+              autoClose: 5000,
+              hideProgressBar: true,
+              closeOnClick: false,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: "light",
+            });
+            setIsSaveLoading(false);
+          }
+        }
+      } else {
+        if (resultUpdateArsip.status === 200) {
+          toast.success("Data arsip berhasil disimpan", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+          dispatch(setShowModal({ editArsipModal: false }));
+          setIsSaveLoading(false);
+          getData();
+        } else {
+          toast.error("Data arsip gagal disimpan", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+          setIsSaveLoading(false);
+        }
+      }
     },
     validationSchema: schema,
   });
@@ -911,7 +754,6 @@ const TableArsip = () => {
           setIsLoading(false);
           return;
         }
-        console.log(responseJson);
         if (responseJson.status === false) {
           if (packageCapabilities.canManageRetention) {
             toast.error("Internal server error", {
@@ -1165,7 +1007,6 @@ const TableArsip = () => {
     const filterResult: any = rows.filter((data: any) => data.id === id);
     // Get by arsip_id tabel arsip_jenis
     await getFileArsipByArsipId(id);
-    console.log(filterResult);
     if (filterResult.length > 0) {
       formik.setValues({
         id: filterResult[0].id,
@@ -1199,7 +1040,7 @@ const TableArsip = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.user]);
 
-  // Dropdown userId reference by divisiId
+  // Dropdown userId reference by instansiId
   useEffect(() => {
     if (formik.values.instansiId && formik.values.instansiId != "0") {
       getDataOwnerUser();
@@ -1283,39 +1124,25 @@ const TableArsip = () => {
       cancelButtonText: "Batal",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        // Ambil data dari tabel "arsip_files"
+        // Get data "arsip_files" berdasarkan ID arsip_files untuk mendapatkan arsip_id
         const fileArsip = await fetch(`../api/arsip-files/${id}`, {
           method: "GET",
         });
         const responseJson = await fileArsip.json();
 
-        // Ambil data dari tabel "arsip" berdasarkan arsip_id
-        const dataArsip = await fetch(
-          `../api/arsip/detail/${responseJson.data.arsip_id}`,
-          {
-            method: "GET",
-          },
-        );
-        const responseJsonArsip = await dataArsip.json();
-        // const instansiName = resolveInstansiName(
-        //   responseJsonArsip?.data?.instansi_id,
-        //   responseJson.data.arsip_id,
-        // );
-
-        // // Untuk hapus file di firebase
-        // const desertRef = ref(
-        //   storage,
-        //   `eduarsip-app/fileArsip/${instansiName}/${responseJson.data.file_upload}`,
-        // );
-        // deleteObject(desertRef);
-
-        // delete data di tabel "firebase" by arsip_files
-        const responseDeleteFirebaseData = await fetch(
-          `../api/firebase/delete-byarsip-files/${id}`,
-          {
-            method: "DELETE",
-          },
-        );
+        if (responseJson.status !== true) {
+          toast.error("Data file tidak ditemukan", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+          return;
+        }
 
         // delete data di tabel "arsip_files"
         const responseDeleteArsipFilesData = await fetch(
@@ -1325,10 +1152,7 @@ const TableArsip = () => {
           },
         );
 
-        if (
-          responseDeleteFirebaseData.status === 200 &&
-          responseDeleteArsipFilesData.status === 200
-        ) {
+        if (responseDeleteArsipFilesData.status === 200 && responseJson.data) {
           toast.success("Data file berhasil di hapus", {
             position: "top-right",
             autoClose: 5000,
@@ -1818,7 +1642,7 @@ const TableArsip = () => {
     try {
       const fileRef = ref(
         storage,
-        `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
+        `EduArsipStandart/ArchieveFiles/${instansiName}/${fileName}`,
       );
       const url = await getDownloadURL(fileRef);
 
