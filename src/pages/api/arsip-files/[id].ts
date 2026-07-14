@@ -32,7 +32,7 @@ export default async function handler(
     try {
       const { data: arsipFile } = await fetchExternalJson<UpstreamResponse>(
         req,
-        `/v1/arsip-files/${id}`,
+        `/v1/auth/arsip-files/${id}`,
         { method: "GET" }
       );
 
@@ -58,7 +58,7 @@ export default async function handler(
 
   if (req.method === "DELETE") {
     try {
-      await fetchExternalJson(req, `/v1/arsip-files/${id}`, {
+      await fetchExternalJson(req, `/v1/auth/arsip-files/${id}`, {
         method: "DELETE",
       });
 

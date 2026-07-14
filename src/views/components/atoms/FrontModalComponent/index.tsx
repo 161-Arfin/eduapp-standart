@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import FrontDetailComponent from "../FrontDetailComponent";
@@ -107,7 +108,7 @@ const FrontModalComponent = ({
   return (
     <div
       id="hs-notifications"
-      className={`hs-overlay size-full fixed top-0 start-0 z-50 overflow-x-hidden overflow-y-auto ${
+      className={`hs-overlay size-full fixed top-0 inset-s-0 z-50 overflow-x-hidden overflow-y-auto ${
         isShowModal[dataTarget] ? "open opened" : "hidden"
       }`}
       role="dialog"
@@ -120,7 +121,7 @@ const FrontModalComponent = ({
       >
         <div className="relative flex flex-col bg-white border border-gray-200 shadow-2xs rounded-xl overflow-hidden">
           {/* Tombol close */}
-          <div className="absolute top-2 end-2">
+          <div className="absolute top-2 inset-e-2">
             <button
               type="button"
               className="size-8 inline-flex justify-center items-center gap-x-2 rounded-full border border-transparent bg-gray-100 text-gray-800 hover:bg-gray-200 focus:outline-hidden focus:bg-gray-200 disabled:opacity-50 disabled:pointer-events-none"
@@ -148,7 +149,7 @@ const FrontModalComponent = ({
           </div>
           {/* Tombol kembali */}
           {currentChildren == "detailComponent" ? (
-            <div className="absolute top-2 start-2">
+            <div className="absolute top-2 inset-s-2">
               <button
                 type="button"
                 className="size-8 inline-flex justify-center items-center gap-x-2 rounded-full border border-transparent bg-gray-100 text-gray-800 hover:bg-gray-200 focus:outline-hidden focus:bg-gray-200 disabled:opacity-50 disabled:pointer-events-none"
@@ -166,7 +167,7 @@ const FrontModalComponent = ({
                 >
                   <path d="M560.67-240 320-480.67l240.67-240.66L608-674 414.67-480.67 608-287.33 560.67-240Z" />
                 </svg>
-                <span className="absolute top-1 start-10 text-gray-500">
+                <span className="absolute top-1 inset-s-10 text-gray-500">
                   Back
                 </span>
               </button>
@@ -270,7 +271,7 @@ const FrontModalComponent = ({
                   handleDetail={(row: any) => handleDetail(row)}
                 />
               ) : (
-                <div className="w-full h-[400px] flex justify-center items-center">
+                <div className="w-full h-100 flex justify-center items-center">
                   <SpinLoadingComponent />
                 </div>
               )

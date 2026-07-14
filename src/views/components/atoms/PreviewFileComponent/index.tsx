@@ -3,23 +3,18 @@ import React from "react";
 type PreviewFileComponentProps = {
   label: string;
   data: any;
-  onDownload?: (item: any) => void;
 };
 
-const PreviewFileComponent = ({
-  label,
-  data,
-  onDownload,
-}: PreviewFileComponentProps) => {
+const PreviewFileComponent = ({ label, data }: PreviewFileComponentProps) => {
   const dataFile = Array.isArray(data) ? data : [];
 
   return (
     <>
       <label className="block text-sm font-medium mb-2">{label}</label>
       <div className="max-w-full grid md:grid-cols-2 gap-3">
-        {dataFile?.map((item: any) => (
+        {dataFile?.map((item: any, index: number) => (
           <div
-            key={item.id}
+            key={index}
             className="p-2 pl-3 bg-white border border-solid border-gray-300 rounded-xl"
           >
             <div className="mb-0 flex justify-between items-center">
@@ -49,40 +44,10 @@ const PreviewFileComponent = ({
                 </div>
               </div>
               <div className="flex items-center gap-x-2">
-                <a
-                  href={item.link_firebase}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-600 focus:outline-hidden"
-                >
-                  <svg
-                    className="shrink-0 size-4"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="m8 12 4 4 4-4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M12 16V4M19 17v.6c0 1.33-1.07 2.4-2.4 2.4H7.4C6.07 20 5 18.93 5 17.6V17"
-                      strokeMiterlimit="10"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </a>
                 <button
                   type="button"
                   className="text-red-400 hover:text-red-600 focus:outline-hidden"
-                  onClick={() => item.action(item.id)}
+                  onClick={() => item.action(item.id_arsip_files)}
                 >
                   <svg
                     className="shrink-0 size-4"

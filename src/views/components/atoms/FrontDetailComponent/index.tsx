@@ -10,6 +10,7 @@ type FrontDetailComponentProps = {
   isLoading: boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PRIVATE_STATUS_FILE = 1;
 const PUBLIC_STATUS_FILE = 2;
 const PRIVILEGED_USER_TYPES = [1, 2, 3, 5];
@@ -75,7 +76,7 @@ const FrontDetailComponent = ({
     try {
       const fileRef = ref(
         storage,
-        `eduarsip-app/fileArsip/${instansiName}/${fileName}`,
+        `EduArsipStandart/ArchieveFiles/${instansiName}/${fileName}`,
       );
       const url = await getDownloadURL(fileRef);
       const link = document.createElement("a");
@@ -155,7 +156,7 @@ const FrontDetailComponent = ({
   return isLoading == false ? (
     <div className="space-y-4 h-auto overflow-x-auto overflow-hidden">
       <div className="group relative flex gap-x-5">
-        <div className="relative group-last:after:hidden after:absolute after:top-8 after:bottom-2 after:start-3 after:w-px after:-translate-x-[0.5px] after:bg-gray-200">
+        <div className="relative group-last:after:hidden after:absolute after:top-8 after:bottom-2 after:inset-s-3 after:w-px after:-translate-x-[0.5px] after:bg-gray-200">
           <div className="relative z-10 size-6 flex justify-center items-center">
             <svg
               className="shrink-0 size-6 text-gray-600"
@@ -204,7 +205,7 @@ const FrontDetailComponent = ({
       </div>
     </div>
   ) : (
-    <div className="w-full h-[400px] flex justify-center items-center">
+    <div className="w-full h-100 flex justify-center items-center">
       <SpinLoadingComponent />
     </div>
   );

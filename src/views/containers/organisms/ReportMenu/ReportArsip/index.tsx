@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import CardContainerComponent from "@/views/components/atoms/CardContainerComponent";
 import SpinLoadingComponent from "@/views/components/atoms/SpinLoadingComponent";
 import { useSession } from "next-auth/react";
@@ -234,7 +235,7 @@ const ReportArsip = () => {
       <ToastContainer />
       <div className="flex flex-wrap mt-0 mb-16 mx-0">
         {isLoading ? (
-          <div className="w-full h-[400px] flex justify-center items-center">
+          <div className="w-full h-100 flex justify-center items-center">
             <SpinLoadingComponent />
           </div>
         ) : (
@@ -256,7 +257,7 @@ const ReportArsip = () => {
                       <p className="mt-1 text-3xl font-semibold leading-tight text-gray-800">
                         {item.count}
                       </p>
-                      <p className="mt-2 min-h-[40px] text-sm text-gray-500">
+                      <p className="mt-2 min-h-10 text-sm text-gray-500">
                         {item.description}
                       </p>
                     </div>

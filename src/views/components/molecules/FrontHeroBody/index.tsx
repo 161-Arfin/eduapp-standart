@@ -1,3 +1,5 @@
+/* eslint-disable prefer-const */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
@@ -5,7 +7,6 @@ import FrontModalComponent from "../../atoms/FrontModalComponent";
 import { useDispatch, useSelector } from "react-redux";
 import { setShowModal } from "@/lib/redux/actions/ShowModalSlice";
 import { getKeteranganMeta } from "@/utils/arsip";
-import { getPackageCapabilities } from "@/utils/packageCapabilities";
 
 interface DataOption {
   id: string;
@@ -20,7 +21,6 @@ interface Data {
   instansi_name?: string;
   deskripsi_arsip: string;
   masa_retensi?: string;
-  is_available: React.JSX.Element;
   status_file_id: number;
   status_file: React.JSX.Element;
   status_retensi?: React.JSX.Element | null;
@@ -35,9 +35,7 @@ interface Data {
 const FrontHeroBody = () => {
   const { data }: any = useSession();
   const dispatch = useDispatch();
-  const packageCapabilities = getPackageCapabilities(data?.user?.usertypeId);
   const [optionButton, setOptionButton] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [isLoadingFetchMore, setIsLoadingFetchMore] = useState(false);
   const [onChangeValue, setOnChangeValue] = useState<string>("");
@@ -66,7 +64,6 @@ const FrontHeroBody = () => {
     instansi_name: string | undefined,
     deskripsi_arsip: string,
     masa_retensi: string | undefined,
-    is_available: React.JSX.Element,
     status_file_id: number,
     status_file: React.JSX.Element,
     status_retensi: React.JSX.Element | null,
@@ -85,7 +82,6 @@ const FrontHeroBody = () => {
       instansi_name,
       deskripsi_arsip,
       masa_retensi,
-      is_available,
       status_file_id,
       status_file,
       status_retensi,
@@ -166,13 +162,12 @@ const FrontHeroBody = () => {
       }
 
       if (responseJson.data && responseJson.data.length > 0) {
-        const result = responseJson.data.map((data: any, index: number) => {
+        const result = responseJson.data.map((data: any) => {
           return createDataOption(data.id_instansi, data.instansi_name);
         });
 
         setOptionButton(result);
       }
-      setIsLoading(false);
     }
   };
 
@@ -182,11 +177,7 @@ const FrontHeroBody = () => {
         getInstansi();
       } else {
         setOptionButton([]);
-        setIsLoading(false);
       }
-    } else if (data === null) {
-      // If session is definitely null (not loading), stop loading spinner
-      setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.user.usertypeId, data]);
@@ -229,77 +220,89 @@ const FrontHeroBody = () => {
 
       if (dataArsipJson.data?.length > 0) {
         const result = dataArsipJson.data.map((data: any) => {
-        // Status peminjaman
-        let isAvailable: React.JSX.Element;
-        if (data.is_available == true) {
-          isAvailable = (
-            <span className="inline-flex items-center py-0.5 px-1.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-              Tersedia
-            </span>
+          const statusAccess = createStatusAccessBadge(data.status_file);
+
+          const statusRetensi = createRetentionBadge(data.status_retensi);
+
+          // Format masa retensi
+          const formatMasaRetensi = (value?: string) => {
+            if (!value) return "-";
+
+            const parsedDate = new Date(value);
+            if (Number.isNaN(parsedDate.getTime())) return "-";
+
+            const months = [
+              "Januari",
+              "Februari",
+              "Maret",
+              "April",
+              "Mei",
+              "Juni",
+              "Juli",
+              "Agustus",
+              "September",
+              "Oktober",
+              "November",
+              "Desember",
+            ];
+
+            const date = parsedDate.getDate();
+            const month = months[parsedDate.getMonth()];
+            const year = parsedDate.getFullYear();
+
+            return `${date} ${month} ${year}`;
+          };
+
+          // Keterangan
+          const keteranganMeta = getKeteranganMeta(data.keterangan);
+          const keterangan = keteranganMeta.label;
+          const keteranganId = keteranganMeta.id;
+
+          // Created At
+          let created_at: Date;
+          let createdAt: string = "";
+          if (data.created_at) {
+            created_at = new Date(data.created_at);
+            const months = [
+              "Januari",
+              "Februari",
+              "Maret",
+              "April",
+              "Mei",
+              "Juni",
+              "Juli",
+              "Agustus",
+              "September",
+              "Oktober",
+              "November",
+              "Desember",
+            ];
+
+            const year = created_at.getFullYear();
+            const month = months[created_at.getMonth()];
+            const date = created_at.getDate();
+
+            createdAt = date + " " + month + " " + year;
+          }
+          console.log("data", data);
+          return createData(
+            data.id_arsip,
+            data.no_arsip,
+            data.arsip_name,
+            data.instansi_id,
+            data.instansi_name,
+            data.deskripsi_arsip,
+            formatMasaRetensi(data.masa_retensi),
+            data.status_file,
+            statusAccess,
+            statusRetensi,
+            keteranganId,
+            keterangan,
+            createdAt,
+            data.created_by,
+            data.user_name,
+            data.user_id,
           );
-        } else {
-          isAvailable = (
-            <span className="inline-flex items-center py-0.5 px-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              Dipinjam
-            </span>
-          );
-        }
-
-        const statusAccess = createStatusAccessBadge(data.status_file);
-
-        const statusRetensi = createRetentionBadge(data.status_retensi);
-
-        // Keterangan
-        const keteranganMeta = getKeteranganMeta(data.keterangan);
-        const keterangan = keteranganMeta.label;
-        const keteranganId = keteranganMeta.id;
-
-        // Created At
-        let created_at: Date;
-        let createdAt: string = "";
-        if (data.created_at) {
-          created_at = new Date(data.created_at);
-          const months = [
-            "Januari",
-            "Februari",
-            "Maret",
-            "April",
-            "Mei",
-            "Juni",
-            "Juli",
-            "Agustus",
-            "September",
-            "Oktober",
-            "November",
-            "Desember",
-          ];
-
-          const year = created_at.getFullYear();
-          const month = months[created_at.getMonth()];
-          const date = created_at.getDate();
-
-          createdAt = date + " " + month + " " + year;
-        }
-
-        return createData(
-          data.id_arsip,
-          data.no_arsip,
-          data.arsip_name,
-          data.instansi_id,
-          data.instansi_name,
-          data.deskripsi_arsip,
-          data.masa_retensi,
-          isAvailable,
-          data.status_file,
-          statusAccess,
-          statusRetensi,
-          keteranganId,
-          keterangan,
-          createdAt,
-          data.created_by,
-          data.user_name,
-          data.user_id,
-        );
         });
         const finalResult = result.sort((a: any, b: any) => b.id - a.id);
 
@@ -374,25 +377,38 @@ const FrontHeroBody = () => {
 
         if (resultJson.data.length > 0 && resultJson.cursor != 0) {
           const result = resultJson.data.map((data: any) => {
-            // Status peminjaman
-            let isAvailable: React.JSX.Element;
-            if (data.is_available == true) {
-              isAvailable = (
-                <span className="inline-flex items-center py-0.5 px-1.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                  Tersedia
-                </span>
-              );
-            } else {
-              isAvailable = (
-                <span className="inline-flex items-center py-0.5 px-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  Dipinjam
-                </span>
-              );
-            }
-
             const statusAccess = createStatusAccessBadge(data.status_file);
 
             const statusRetensi = createRetentionBadge(data.status_retensi);
+
+            // Format masa retensi
+            const formatMasaRetensi = (value?: string) => {
+              if (!value) return "-";
+
+              const parsedDate = new Date(value);
+              if (Number.isNaN(parsedDate.getTime())) return "-";
+
+              const months = [
+                "Januari",
+                "Februari",
+                "Maret",
+                "April",
+                "Mei",
+                "Juni",
+                "Juli",
+                "Agustus",
+                "September",
+                "Oktober",
+                "November",
+                "Desember",
+              ];
+
+              const date = parsedDate.getDate();
+              const month = months[parsedDate.getMonth()];
+              const year = parsedDate.getFullYear();
+
+              return `${date} ${month} ${year}`;
+            };
 
             // Keterangan
             const keteranganMeta = getKeteranganMeta(data.keterangan);
@@ -433,8 +449,7 @@ const FrontHeroBody = () => {
               data.instansi_id,
               data.instansi_name,
               data.deskripsi_arsip,
-              data.masa_retensi,
-              isAvailable,
+              formatMasaRetensi(data.masa_retensi),
               data.status_file,
               statusAccess,
               statusRetensi,
@@ -530,7 +545,7 @@ const FrontHeroBody = () => {
       <div
         className={`opacity-100 transition-opacity duration-1000 relative overflow-hidden`}
       >
-        <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-24">
+        <div className="max-w-340 mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-24">
           <div className="text-center">
             <h1 className="text-4xl sm:text-6xl font-bold text-gray-800">
               EduArsip
@@ -587,7 +602,7 @@ const FrontHeroBody = () => {
               {/* <!-- End Form --> */}
 
               {/* <!-- SVG Element --> */}
-              <div className="hidden md:block absolute top-0 end-0 -translate-y-12 translate-x-20">
+              <div className="hidden md:block absolute top-0 inset-e-0 -translate-y-12 translate-x-20">
                 <svg
                   className="w-16 h-auto text-orange-500"
                   width="121"
@@ -619,7 +634,7 @@ const FrontHeroBody = () => {
               {/* <!-- End SVG Element --> */}
 
               {/* <!-- SVG Element --> */}
-              <div className="hidden md:block absolute bottom-0 start-0 translate-y-10 -translate-x-32">
+              <div className="hidden md:block absolute bottom-0 inset-s-0 translate-y-10 -translate-x-32">
                 <svg
                   className="w-40 h-auto text-cyan-500"
                   width="347"
