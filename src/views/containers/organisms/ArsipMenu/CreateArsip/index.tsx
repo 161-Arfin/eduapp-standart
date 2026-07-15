@@ -349,8 +349,8 @@ const CreateArsip = () => {
             : values.userId;
 
         const basePayload: BaseArsipPayload = {
-          instansi_id: instansiId,
-          user_id: userId,
+          instansi_id: Number(instansiId),
+          user_id: Number(userId),
           no_arsip: values.noArsip,
           arsip_name: values.arsipName,
           deskripsi_arsip: values.deskripsiArsip,
