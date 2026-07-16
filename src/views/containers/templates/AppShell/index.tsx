@@ -43,8 +43,9 @@ const AppShell = ({ title, children }: AppShellProps) => {
       <div className="flex h-screen overflow-hidden bg-gray-50">
         <Sidebar />
         <div
-          className={`w-full ${expanded ? "lg:w-[80%]" : "lg:w-[95%]"
-            } md:w-[91%] h-screen flex flex-col overflow-hidden transition-all bg-gray-50`}
+          className={`w-full ${
+            expanded ? "lg:w-[80%]" : "lg:w-[95%]"
+          } md:w-[91%] h-screen flex flex-col overflow-hidden transition-all bg-gray-50`}
         >
           <Navbar title={title} />
           <div
