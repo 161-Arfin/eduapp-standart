@@ -20,8 +20,9 @@ const TextInputComponent = ({
   return (
     <div className="mb-3">
       <label
-        className={`block text-sm font-medium mb-2 ${isPriority && "after:content-['*'] after:ml-0.5 after:text-red-500"
-          }`}
+        className={`block text-sm font-medium mb-2 ${
+          isPriority && "after:content-['*'] after:ml-0.5 after:text-red-500"
+        }`}
       >
         {label}
       </label>
@@ -29,15 +30,16 @@ const TextInputComponent = ({
         <div className="relative">
           <input
             type="text"
-            className={`py-2 px-3 block w-full border rounded-lg text-sm disabled:opacity-50 disabled:pointer-events-none ${isInvalid
+            className={`py-2 px-3 block w-full border rounded-lg text-sm disabled:opacity-50 disabled:pointer-events-none ${
+              isInvalid
                 ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                 : "border-gray-200 focus:border-blue-300 focus:ring-blue-300"
-              }`}
+            }`}
             onChange={handleChange}
             value={value}
           />
           {isInvalid ? (
-            <div className="absolute inset-y-0 end-0 flex items-center pointer-events-none pe-3">
+            <div className="absolute inset-y-0 inset-e-0 flex items-center pointer-events-none pe-3">
               <svg
                 className="shrink-0 size-4 text-red-500"
                 xmlns="http://www.w3.org/2000/svg"
@@ -68,4 +70,3 @@ const TextInputComponent = ({
 };
 
 export default TextInputComponent;
-

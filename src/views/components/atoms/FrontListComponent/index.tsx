@@ -54,7 +54,6 @@ const FrontListComponent = ({
                   </span>
                   <div className="flex flex-wrap items-center gap-x-1 gap-y-2 mt-4">
                     {row.status_retensi || null}
-                    {row.is_available}
                   </div>
                 </span>
               </span>

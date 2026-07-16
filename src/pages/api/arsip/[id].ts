@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { fetchExternalJson, sendApiError } from "@/lib/api/external";
-import { enrichArsipRelations, filterActiveArsip } from "./_helpers";
 
 type Data = {
   status: boolean;
@@ -43,42 +42,16 @@ export default async function handler(
       res.setHeader("Cache-Control", "no-store");
       const { data } = await fetchExternalJson<ArsipListResponse>(
         req,
-        "/v1/auth/arsip",
+        id == 5 ? "/v1/auth/arsip" : `/v1/auth/arsip/byinstansi`,
         { method: "GET" },
       );
-      // const { data } = await fetch(
-      //   `${process.env.API_URL}/v1/auth/arsip/byinstasi`,
-      //   {
-      //     method: "GET",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //       Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZF91c2VycyI6MTM3LCJpbnN0YW5zaV9pZCI6MSwidXNlcm5hbWUiOiJyaWRhcm1hc3RlciIsImV4cCI6MTc3NjMxNzE3OX0.yqFulAqnt581u4dNlSSYd647LCGwgL3_HWuEOn5xfPk`,
-      //     },
-      //   },
-      // );
-
-      // const response: any = await fetch(
-      //   `${process.env.API_URL}/v1/auth/arsip/byinstasi`,
-      //   {
-      //     method: "GET",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //       "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZF91c2VycyI6MTM3LCJpbnN0YW5zaV9pZCI6MSwidXNlcm5hbWUiOiJyaWRhcm1hc3RlciIsImV4cCI6MTc3NjMyMDI2OX0.2cV5BnT1cQV-gITHcM494qox2S_rAN7wIyWm3dDNHXM`,
-      //     },
-      //   },
-      // );
-
-      // console.log("Response:", response);
 
       if (data?.success === true) {
-        const activeItems = filterActiveArsip(data.data ?? []);
-        const resultData = await enrichArsipRelations(activeItems, req);
-
         res.status(200).json({
           status: true,
           statusCode: 200,
           message: "Success",
-          data: resultData,
+          data: data.data,
           cursor: null,
           hasMore: false,
         });

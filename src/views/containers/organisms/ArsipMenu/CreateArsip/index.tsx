@@ -1,4 +1,5 @@
-﻿import { useFormik } from "formik";
+﻿/* eslint-disable react-hooks/set-state-in-effect */
+import { useFormik } from "formik";
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 import * as yup from "yup";
@@ -11,7 +12,6 @@ import TextInputComponent from "@/views/components/atoms/TextInputComponent";
 import SelectComponent from "@/views/components/atoms/SelectComponent";
 import SpinLoadingComponent from "@/views/components/atoms/SpinLoadingComponent";
 import ButtonComponent from "@/views/components/atoms/ButtonComponent";
-import MultipleCheckboxComponent from "@/views/components/atoms/MultipleCheckboxComponent";
 import DatepickerComponent from "@/views/components/atoms/DatepickerComponent";
 import MultipleFileInputComponent from "@/views/components/atoms/MultipleFileInputComponent";
 import RadioComponent from "@/views/components/atoms/RadioComponent";
@@ -82,10 +82,6 @@ const ALLOWED_ARCHIVE_FILE_ACCEPT = [
 
 const CreateArsip = () => {
   const { data }: any = useSession();
-
-  // useEffect(() => {
-  //   console.log("SESSION DATA:", data);
-  // }, [data]);
   const isRegularUser =
     data?.user?.usertypeId == 3 || data?.user?.usertypeId == 4;
   const [isLoading, setIsLoading] = useState(true);
@@ -160,7 +156,7 @@ const CreateArsip = () => {
       }
 
       if (responseJson.data && responseJson.data.length > 0) {
-        const result = responseJson.data.map((data: any, index: number) => {
+        const result = responseJson.data.map((data: any) => {
           return createDataOption(data.id_instansi, data.instansi_name);
         });
         const listOption: any = [
@@ -212,7 +208,7 @@ const CreateArsip = () => {
         }
 
         if (responseJson.data && responseJson.data.length > 0) {
-          const result = responseJson.data.map((data: any, index: number) => {
+          const result = responseJson.data.map((data: any) => {
             return createDataOption(data.id_users, data.name);
           });
 
@@ -235,7 +231,7 @@ const CreateArsip = () => {
           setUserOption([{ id: 0, name: "- Tidak ada user -" }]);
           setUserSelected({ id: 0, name: "- Tidak ada user -" });
         }
-      } catch (error: any) {
+      } catch {
         setUserOption([{ id: 0, name: "- Gagal memuat user -" }]);
         setUserSelected({ id: 0, name: "- Gagal memuat user -" });
       } finally {
@@ -243,58 +239,6 @@ const CreateArsip = () => {
       }
     }
   };
-
-  // const getJenisArsip = async () => {
-  //   if (
-  //     data?.user.usertypeId != undefined &&
-  //     data?.user.instansiId != undefined
-  //   ) {
-  //     try {
-  //       const response = await fetch(
-  //         `../../api/jenis-arsip/${data.user.usertypeId}`,
-  //         {
-  //           method: "GET",
-  //         },
-  //       );
-  //       const responseJson = await response.json();
-
-  //       if (responseJson.status === false) {
-  //         if (data?.user?.usertypeId != 3) {
-  //           toast.error("Internal server error", {
-  //             position: "top-right",
-  //             autoClose: 5000,
-  //             hideProgressBar: true,
-  //             closeOnClick: false,
-  //             pauseOnHover: true,
-  //             draggable: true,
-  //             progress: undefined,
-  //             theme: "light",
-  //           });
-  //         }
-  //       }
-
-  // if (responseJson.data && responseJson.data.length > 0) {
-  //   const finalResult = responseJson.data.sort(
-  //     (a: any, b: any) => b.id_jenis - a.id_jenis,
-  //   );
-  //   setJenisArsip(finalResult);
-  // } else if (responseJson.data && responseJson.data.length == 0) {
-  //   setJenisArsip([]);
-  // }
-  //     } catch (error: any) {
-  //       toast.error("Internal server error", {
-  //         position: "top-right",
-  //         autoClose: 5000,
-  //         hideProgressBar: true,
-  //         closeOnClick: false,
-  //         pauseOnHover: true,
-  //         draggable: true,
-  //         progress: undefined,
-  //         theme: "light",
-  //       });
-  //     }
-  //   }
-  // };
 
   // Rendering awal auto fill
   useEffect(() => {
@@ -345,17 +289,6 @@ const CreateArsip = () => {
     }
   }, [data?.user.usertypeId]);
 
-  // Rendering Awal
-  // useEffect(() => {
-  //   getJenisArsip();
-  //   if (data?.user.usertypeId == 5) {
-  //     getDataInstansi();
-  //   } else {
-  //     setIsLoading(false);
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [data?.user]);
-
   useEffect(() => {
     if (data?.user?.usertypeId == 5) {
       getDataInstansi();
@@ -367,7 +300,6 @@ const CreateArsip = () => {
 
   // Handle formik
   const formik = useFormik<{
-    id: string;
     instansiId: string;
     userId: string;
     noArsip: string;
@@ -379,7 +311,6 @@ const CreateArsip = () => {
     fileArsip?: FileList;
   }>({
     initialValues: {
-      id: "",
       instansiId: "",
       userId: "",
       noArsip: "",
@@ -416,42 +347,10 @@ const CreateArsip = () => {
           data?.user.usertypeId == 3 || data?.user.usertypeId == 4
             ? data?.user.id
             : values.userId;
-        // const normalizedInstansiId = Number(instansiId);
-        // const normalizedUserId = Number(userId);
-
-        // if (!normalizedInstansiId || Number.isNaN(normalizedInstansiId)) {
-        //   toast.error("Instansi tidak valid", {
-        //     position: "top-right",
-        //     autoClose: 5000,
-        //     hideProgressBar: true,
-        //     closeOnClick: false,
-        //     pauseOnHover: true,
-        //     draggable: true,
-        //     progress: undefined,
-        //     theme: "light",
-        //   });
-        //   setIsSaveLoading(false);
-        //   return;
-        // }
-
-        // if (!normalizedUserId || Number.isNaN(normalizedUserId)) {
-        //   toast.error("Kepemilikan arsip tidak valid", {
-        //     position: "top-right",
-        //     autoClose: 5000,
-        //     hideProgressBar: true,
-        //     closeOnClick: false,
-        //     pauseOnHover: true,
-        //     draggable: true,
-        //     progress: undefined,
-        //     theme: "light",
-        //   });
-        //   setIsSaveLoading(false);
-        //   return;
-        // }
 
         const basePayload: BaseArsipPayload = {
-          instansi_id: instansiId,
-          user_id: userId,
+          instansi_id: Number(instansiId),
+          user_id: Number(userId),
           no_arsip: values.noArsip,
           arsip_name: values.arsipName,
           deskripsi_arsip: values.deskripsiArsip,
@@ -466,7 +365,6 @@ const CreateArsip = () => {
 
         const valueArsip: BaseArsipPayload | AdvancedArsipPayload = {
           ...basePayload,
-          // jenis_arsip_id: values.jenisArsipId,
           masa_retensi: masaRetensiPayload,
           status_retensi: getRetentionStatus(masaRetensiPayload),
         };
@@ -619,10 +517,7 @@ const CreateArsip = () => {
                   {/* Row */}
                   <div className="flex flex-wrap mx-2 mb-0">
                     {/* Col */}
-                    {data?.user.usertypeId == 5 ||
-                    data?.user.usertypeId == 1 ||
-                    data?.user.usertypeId == 2 ||
-                    data?.user.usertypeId == 3 ? (
+                    {data?.user.usertypeId == 5 ? (
                       <div
                         className={`mb-3 w-full md:w-1/2 flex-2 px-0 md:px-3`}
                       >
@@ -838,7 +733,7 @@ const CreateArsip = () => {
             </form>
           </div>
         ) : (
-          <div className="w-full h-[400px] flex justify-center items-center">
+          <div className="w-full h-100 flex justify-center items-center">
             <SpinLoadingComponent />
           </div>
         )}

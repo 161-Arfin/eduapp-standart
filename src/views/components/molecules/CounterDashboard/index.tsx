@@ -120,7 +120,7 @@ const CounterDashboard = ({ icon }: CounterDashboardProps) => {
           </div>
         ))
       ) : (
-        <div className="w-full h-[400px] flex justify-center items-center">
+        <div className="w-full h-100 flex justify-center items-center">
           <SpinLoadingComponent />
         </div>
       )}

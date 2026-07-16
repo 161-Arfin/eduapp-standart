@@ -4,7 +4,6 @@ import {
   fetchExternalJson,
   sendApiError,
 } from "@/lib/api/external";
-import { getToken } from "next-auth/jwt";
 
 type Data = {
   status: boolean;
@@ -42,46 +41,27 @@ export default async function handler(
     return;
   }
 
-  //tambahan code
-  const [usertypeId] = Array.isArray(id) ? id : [id];
-
-  if (usertypeId === "3" || usertypeId === "4") {
-    const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    const tokenUserId = token?.id;
-    const tokenUserName = typeof token?.name === "string" ? token.name : "";
-
-    res.status(200).json({
-      status: true,
-      statusCode: 200,
-      data:
-        tokenUserId && tokenUserName
-          ? [
-              {
-                id_users: tokenUserId,
-                name: tokenUserName,
-              },
-            ]
-          : [],
-    });
-    return;
-  }
-
   try {
-    const { data } = await fetchExternalJson<UpstreamResponse>(
-      req,
-      "/v1/user/option",
-      { method: "GET" },
-    );
+    let response: any;
+    if (id[0] === '5') {
+      response = await fetchExternalJson<UpstreamResponse>(
+        req,
+        "/v1/auth/user/byinstansi/" + id[1],
+        { method: "GET" }
+      );
+    } else if (id[0] === '3') {
+      response = await fetchExternalJson<UpstreamResponse>(
+        req,
+        "/v1/auth/user/byinstansi",
+        { method: "GET" }
+      );
+    }
 
-    if (data?.success === true) {
+    if (response.data.success === true) {
       res.status(200).json({
         status: true,
         statusCode: 200,
-        data: data.data,
+        data: response.data.data,
       });
       return;
     }

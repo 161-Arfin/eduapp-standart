@@ -1,8 +1,8 @@
-﻿import { storage } from "@/lib/firebase/init";
+﻿/* eslint-disable prefer-const */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { setAlertMessage } from "@/lib/redux/actions/alertMessageSlice";
 import SpinLoadingComponent from "@/views/components/atoms/SpinLoadingComponent";
 import TableComponent from "@/views/components/atoms/TableComponent";
-import { deleteObject, ref } from "firebase/storage";
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,7 +18,6 @@ interface Data {
   instansi_name: string;
   deskripsi_arsip: string;
   masa_retensi: string;
-  is_available: React.JSX.Element;
   status_file_id: number;
   status_file: React.JSX.Element;
   status_retensi: React.JSX.Element;
@@ -55,17 +54,6 @@ const RecyclebinArsip = () => {
   const [lastDoc, setLastDoc] = useState([]);
   const [arrData, setArrData] = useState([]);
   const [isLoadingFetchMore, setIsLoadingFetchMore] = useState(false);
-
-  const resolveInstansiName = (arsipId?: string | number) => {
-    if (arsipId !== undefined && arsipId !== null && Array.isArray(rows)) {
-      const row = rows.find((item: any) => item.id == arsipId);
-      if (row?.instansi_name) {
-        return row.instansi_name;
-      }
-    }
-
-    return data?.user?.instansiName || "EduArsip";
-  };
 
   // Set notifikasi
   useEffect(() => {
@@ -104,7 +92,6 @@ const RecyclebinArsip = () => {
     { id: "arsip_name", label: "Nama Arsip", minWidth: 150 },
     { id: "status_file", label: "Status Akses", minWidth: 100 },
     { id: "status_retensi", label: "Status Retensi", minWidth: 100 },
-    // { id: "masa_retensi", label: "Masa Retensi", minWidth: 100 },
     { id: "keterangan", label: "Keterangan", minWidth: 100 },
     {
       id: "action",
@@ -137,7 +124,6 @@ const RecyclebinArsip = () => {
     instansi_name: string,
     deskripsi_arsip: string,
     masa_retensi: string,
-    is_available: React.JSX.Element,
     status_file_id: number,
     status_file: React.JSX.Element,
     status_retensi: React.JSX.Element,
@@ -156,7 +142,6 @@ const RecyclebinArsip = () => {
       instansi_name,
       deskripsi_arsip,
       masa_retensi,
-      is_available,
       status_file_id,
       status_file,
       status_retensi,
@@ -239,22 +224,6 @@ const RecyclebinArsip = () => {
 
         if (responseJson.data && responseJson.data.length > 0) {
           const result = responseJson.data.map((data: any) => {
-            // Status peminjaman
-            let isAvailable: React.JSX.Element;
-            if (data.is_available == true) {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-green-500 text-green-500">
-                  Tersedia
-                </span>
-              );
-            } else {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-red-500 text-red-500">
-                  Dipinjam
-                </span>
-              );
-            }
-
             const statusAccess = getStatusAccessBadge(data.status_file);
 
             // Status retensi
@@ -313,7 +282,6 @@ const RecyclebinArsip = () => {
               data.instansi_name,
               data.deskripsi_arsip,
               formatMasaRetensi(data.masa_retensi),
-              isAvailable,
               data.status_file,
               statusAccess,
               statusRetensi,
@@ -332,7 +300,7 @@ const RecyclebinArsip = () => {
           setRows([]);
         }
         setIsLoading(false);
-      } catch (error: any) {
+      } catch {
         toast.error("Internal server error", {
           position: "top-right",
           autoClose: 5000,
@@ -369,25 +337,16 @@ const RecyclebinArsip = () => {
       cancelButtonText: "Batal",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        // Ambil data dari tabel "arsip_files" berdasarkan id arsip
-        const fileArsip = await fetch(`/api/arsip-files/byarsip/${id}`, {
-          method: "GET",
-          cache: "no-store",
-        });
-        const responseJsonFileArsip = await fileArsip.json();
-
-        const instansiName = resolveInstansiName(id);
-
-        if (responseJsonFileArsip.data.length > 0) {
-          responseJsonFileArsip.data.map(async (item: any) => {
-            // Untuk hapus file di firebase
-            const desertRef = await ref(
-              storage,
-              `eduarsip-app/fileArsip/${instansiName}/${item.file_upload}`,
-            );
-            await deleteObject(desertRef);
-          });
-        }
+        // Delete file from Firebase Storage
+        const deletedArsipFile = await fetch(
+          `../api/arsip-files/delete/${id}`,
+          {
+            method: "DELETE",
+          },
+        );
+        const deletedArsipFileJson = await deletedArsipFile
+          .json()
+          .catch(() => null);
 
         // Forcedelete Data
         const response = await fetch(`../api/arsip/force-delete/${id}`, {
@@ -395,7 +354,12 @@ const RecyclebinArsip = () => {
         });
         const responseJson = await response.json().catch(() => null);
 
-        if (response.ok && responseJson?.status !== false) {
+        if (
+          response.ok &&
+          responseJson?.status !== false &&
+          deletedArsipFile.ok &&
+          deletedArsipFileJson?.status !== false
+        ) {
           toast.success(
             responseJson?.message || "Data arsip berhasil di hapus Permanen",
             {
@@ -510,22 +474,6 @@ const RecyclebinArsip = () => {
 
         if (resultJson.data.length > 0 && resultJson.cursor != 0) {
           const result = resultJson.data.map((data: any) => {
-            // Status peminjaman
-            let isAvailable: React.JSX.Element;
-            if (data.is_available == true) {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-green-500 text-green-500">
-                  Tersedia
-                </span>
-              );
-            } else {
-              isAvailable = (
-                <span className="inline-flex items-center gap-x-1.5 py-1 px-3 rounded-full text-xs font-medium border border-red-500 text-red-500">
-                  Dipinjam
-                </span>
-              );
-            }
-
             const statusAccess = getStatusAccessBadge(data.status_file);
 
             // Status retensi
@@ -584,7 +532,6 @@ const RecyclebinArsip = () => {
               data.instansi_name,
               data.deskripsi_arsip,
               formatMasaRetensi(data.masa_retensi),
-              isAvailable,
               data.status_file,
               statusAccess,
               statusRetensi,
@@ -641,7 +588,7 @@ const RecyclebinArsip = () => {
                   Recycle Bin
                 </h6>
               </div>
-              <div className="w-full dark:[&_thead]:!bg-white dark:[&_th]:!text-gray-500 dark:[&_td]:!text-gray-800 dark:[&_table]:!divide-gray-200 dark:[&_tbody]:!divide-gray-200 dark:[&_button]:!shadow-none">
+              <div className="w-full dark:[&_thead]:bg-white! dark:[&_th]:text-gray-500! dark:[&_td]:text-gray-800! dark:[&_table]:divide-gray-200! dark:[&_tbody]:divide-gray-200! dark:[&_button]:shadow-none!">
                 <TableComponent
                   data={rows}
                   columns={columns}
@@ -654,7 +601,7 @@ const RecyclebinArsip = () => {
             </div>
           </div>
         ) : (
-          <div className="w-full h-[400px] flex justify-center items-center">
+          <div className="w-full h-100 flex justify-center items-center">
             <SpinLoadingComponent />
           </div>
         )}

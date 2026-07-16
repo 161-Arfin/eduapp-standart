@@ -33,7 +33,7 @@ export default async function handler(
     return;
   }
 
-  if (req.method !== "GET") {
+  if (req.method !== "DELETE") {
     res.status(405).json({
       status: false,
       statusCode: 405,
@@ -48,7 +48,7 @@ export default async function handler(
       req,
       `/v1/auth/arsip-files/byarsip/${id}`,
       {
-        method: "GET",
+        method: "DELETE",
       },
     );
 
@@ -56,17 +56,17 @@ export default async function handler(
       res.status(200).json({
         status: true,
         statusCode: 200,
-        message: result.data.message,
+        message: result?.message,
         data: result.data.data,
       });
       return;
+    } else {
+      res.status(404).json({
+        status: false,
+        statusCode: 404,
+        message: result?.message || "Data not found",
+      });
     }
-
-    res.status(404).json({
-      status: false,
-      statusCode: 404,
-      message: result?.message || "Data not found",
-    });
   } catch (error: unknown) {
     if (error instanceof ExternalApiError && error.statusCode === 404) {
       res.status(200).json({

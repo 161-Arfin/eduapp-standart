@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { fetchExternalJson, sendApiError } from "@/lib/api/external";
-import { enrichArsipRelations, filterActiveArsip } from "../_helpers";
 
 type Data = {
   status: boolean;
@@ -51,23 +50,20 @@ export default async function handler(
     const endpoint =
       keyword && keyword !== "null"
         ? `/v1/auth/arsip/search/${encodeURIComponent(keyword)}`
-        : "/v1/auth/arsip";
+        : "/v1/auth/arsip/search/null";
 
     const { data: arsip } = await fetchExternalJson<UpstreamResponse>(req, endpoint, {
       method: "GET",
     });
 
     if (arsip?.success === true) {
-      const activeItems = filterActiveArsip(arsip.data ?? []);
-      const resultData = await enrichArsipRelations(activeItems, req);
-
       res.status(200).json({
         status: true,
         statusCode: 200,
-        data: resultData,
+        data: arsip.data,
         cursor: null,
         hasMore: false,
-        total: resultData.length,
+        total: arsip.data?.length ?? 0,
       });
       return;
     }
