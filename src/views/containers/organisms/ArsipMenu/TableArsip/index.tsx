@@ -1697,6 +1697,10 @@ const TableArsip = () => {
                     } else {
                       formik.setFieldValue("instansiId", "");
                     }
+
+                    formik.setFieldValue("userId", "");
+                    setUserSelected({});
+                    setUserOption([{ id: 0, name: "Memuat user..." }]);
                   }}
                   defaultValue={companySelected}
                   isInvalid={!!formik.errors.instansiId}

@@ -218,7 +218,11 @@ const CreateArsip = () => {
             : [{ id: 0, name: "- Pilih User -" }, ...result];
 
           setUserOption(listOption);
-          if (!formik.values.userId || shouldAutoSelectSingleUser) {
+          if (
+            !formik.values.userId ||
+            shouldAutoSelectSingleUser ||
+            data?.user.usertypeId == 5
+          ) {
             const currentUserOption =
               result.find((item: any) => item.id == data?.user?.id) ??
               result[0];
@@ -368,7 +372,6 @@ const CreateArsip = () => {
           masa_retensi: masaRetensiPayload,
           status_retensi: getRetentionStatus(masaRetensiPayload),
         };
-
         // Create arsip
         const result = await fetch("/api/arsip/create", {
           method: "POST",
@@ -504,6 +507,10 @@ const CreateArsip = () => {
                             } else {
                               formik.setFieldValue("instansiId", "");
                             }
+
+                            formik.setFieldValue("userId", "");
+                            setUserSelected({});
+                            setUserOption([{ id: 0, name: "Memuat user..." }]);
                           }}
                           defaultValue={companySelected}
                           isInvalid={!!formik.errors.instansiId}
